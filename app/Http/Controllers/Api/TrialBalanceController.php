@@ -286,7 +286,7 @@ class TrialBalanceController extends Controller
                 'op.type',
                 'op.type_account',
                 'op.user_id',
-                DB::raw('COALESCE(amount, 0) AS amount')
+                DB::raw('COALESCE(SUM(amount), 0) AS amount')
             )
             ->groupBy("account_id", "account_name", "account_code", "nature", "nature_label", "type", "type_account", "user_id")
 
@@ -344,11 +344,11 @@ class TrialBalanceController extends Controller
                 ")
             )
             ->where('op.user_id', $userId)
-            ->orderBy("op.account_code");
-        // ->orderByRaw("
-        //     CAST(SUBSTRING_INDEX(op.account_code, '.', 1) AS UNSIGNED),
-        //     CAST(SUBSTRING_INDEX(op.account_code, '.', -1) AS UNSIGNED)
-        // ");
+            // ->orderBy("op.account_code");
+            ->orderByRaw("
+    CAST(SUBSTRING_INDEX(op.account_code, '.', 1) AS UNSIGNED),
+    CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(op.account_code, '.', 2), '.', -1) AS UNSIGNED),
+    CAST(SUBSTRING_INDEX(op.account_code, '.', -1) AS UNSIGNED)");
 
         // $results = $finalQuery->get();
 
