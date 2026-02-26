@@ -288,7 +288,7 @@ class TrialBalanceController extends Controller
                 'op.user_id',
                 DB::raw('COALESCE(amount, 0) AS amount')
             )
-            ->groupBy("account_id, account_name", "account_code", "nature", "type", "type_account", "user_id")
+            ->groupBy("account_id", "account_name", "account_code", "nature", "type", "type_account", "user_id")
 
             ->orderBy("op.account_code");
 
