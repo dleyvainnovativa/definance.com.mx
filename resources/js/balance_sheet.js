@@ -47,7 +47,7 @@ function buildHeaderCards(data) {
                         <h6 class="my-0"><i class="fa ${group.icon} text-primary" aria-hidden="true"></i></h6>
                     </div>
                     <div class="col-12">
-                        <h3 id="revenue-value" class="my-0 fw-bold">${group.total}</h3>
+                        <h3 id="revenue-value" class="${formatTextClass(group.total)} my-0 fw-bold">${formatCurrency(group.total)}</h3>
                     </div>
                 </div>
             </div>
@@ -70,7 +70,7 @@ function buildCards(data) {
         if (group.display === 'operation') {
             html += `
                 <div class="${colClass} ">
-                    <div class="card card-dark shadow-sm h-100 text-dark">
+                    <div class="card card-dark border border-dark shadow-sm h-100 text-dark">
                         <div class="card-body p-4">
                         
                             
@@ -190,10 +190,6 @@ function buildCards(data) {
         $table.bootstrapTable('toggleCustomView', true);
     }
 });
-}
-
-function formatMoney(value) {
-    return (Math.round(value * 100) / 100).toFixed(2);
 }
 
 

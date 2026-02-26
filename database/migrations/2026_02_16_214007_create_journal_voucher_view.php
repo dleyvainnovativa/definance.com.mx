@@ -22,43 +22,12 @@ return new class extends Migration
     `je`.`entry_date` AS `entry_date`, 
     `je`.`entry_type` AS `entry_type`, 
     `je`.`description` AS `description`, 
-    
-    CASE 
-        WHEN je.entry_type = 'income'  THEN da.id
-        WHEN je.entry_type = 'expense' THEN ca.id
-        WHEN je.entry_type = 'asset_acquisition' THEN ca.id
-        ELSE da.id
-    END AS debit_account_id,
-    CASE 
-        WHEN je.entry_type = 'income'  THEN da.name
-        WHEN je.entry_type = 'expense' THEN ca.name
-        WHEN je.entry_type = 'asset_acquisition' THEN ca.name
-        ELSE da.name
-    END AS debit_account_name,
-    CASE 
-        WHEN je.entry_type = 'income'  THEN da.code
-        WHEN je.entry_type = 'expense' THEN ca.code
-        WHEN je.entry_type = 'asset_acquisition' THEN ca.code
-        ELSE da.code
-    END AS debit_account_code,
-    CASE 
-        WHEN je.entry_type = 'income'  THEN ca.id
-        WHEN je.entry_type = 'expense' THEN da.id
-        WHEN je.entry_type = 'asset_acquisition' THEN da.id
-        ELSE ca.id
-    END AS credit_account_id,
-    CASE 
-        WHEN je.entry_type = 'income'  THEN ca.name
-        WHEN je.entry_type = 'expense' THEN da.name
-        WHEN je.entry_type = 'asset_acquisition' THEN da.name
-        ELSE ca.name
-    END AS credit_account_name,
-    CASE 
-        WHEN je.entry_type = 'income'  THEN ca.code
-        WHEN je.entry_type = 'expense' THEN da.code
-        WHEN je.entry_type = 'asset_acquisition' THEN da.code
-        ELSE ca.code
-    END AS credit_account_code,
+    case when `je`.`entry_type` = 'income' then `da`.`id` when `je`.`entry_type` = 'expense' then `ca`.`id` when `je`.`entry_type` = 'asset_acquisition' then `ca`.`id` else `da`.`id` end AS `debit_account_id`, 
+    case when `je`.`entry_type` = 'income' then `da`.`name` when `je`.`entry_type` = 'expense' then `ca`.`name` when `je`.`entry_type` = 'asset_acquisition' then `ca`.`name` else `da`.`name` end AS `debit_account_name`, 
+    case when `je`.`entry_type` = 'income' then `da`.`code` when `je`.`entry_type` = 'expense' then `ca`.`code` when `je`.`entry_type` = 'asset_acquisition' then `ca`.`code` else `da`.`code` end AS `debit_account_code`, 
+    case when `je`.`entry_type` = 'income' then `ca`.`id` when `je`.`entry_type` = 'expense' then `da`.`id` when `je`.`entry_type` = 'asset_acquisition' then `da`.`id` else `ca`.`id` end AS `credit_account_id`, 
+    case when `je`.`entry_type` = 'income' then `ca`.`name` when `je`.`entry_type` = 'expense' then `da`.`name` when `je`.`entry_type` = 'asset_acquisition' then `da`.`name` else `ca`.`name` end AS `credit_account_name`, 
+    case when `je`.`entry_type` = 'income' then `ca`.`code` when `je`.`entry_type` = 'expense' then `da`.`code` when `je`.`entry_type` = 'asset_acquisition' then `da`.`code` else `ca`.`code` end AS `credit_account_code`, 
     coalesce(`dl`.`debit`, `cl`.`credit`, 0) AS `debit`, 
     coalesce(`dl`.`debit`, `cl`.`credit`, 0) AS `credit` 
   from 
@@ -69,7 +38,7 @@ return new class extends Migration
             `journal_entries` `je` 
             left join `journal_entry_lines` `dl` on(
               `dl`.`journal_entry_id` = `je`.`id` 
-              and `dl`.`debit` > 0
+              and `dl`.`debit` is not null
             )
           ) 
           left join `chart_of_accounts` `da` on(
@@ -78,7 +47,7 @@ return new class extends Migration
         ) 
         left join `journal_entry_lines` `cl` on(
           `cl`.`journal_entry_id` = `je`.`id` 
-          and `cl`.`credit` > 0
+          and `cl`.`credit` is not null
         )
       ) 
       left join `chart_of_accounts` `ca` on(
@@ -86,18 +55,21 @@ return new class extends Migration
       )
     ) 
   where 
-    `je`.`entry_type` NOT IN  ('transfer','opening_balance_credit','opening_balance')
-    union all 
+    `je`.`entry_type` not in (
+      'transfer', 'opening_balance_credit', 
+      'opening_balance'
+    ) 
+  union all 
   select 
     `je`.`id` AS `entry_id`, 
     `je`.`user_id` AS `user_id`, 
     `je`.`entry_date` AS `entry_date`, 
     `je`.`entry_type` AS `entry_type`, 
     `je`.`description` AS `description`, 
-        `da`.`id` AS `debit_account_id`, 
+    `da`.`id` AS `debit_account_id`, 
     `da`.`name` AS `debit_account_name`, 
     `da`.`code` AS `debit_account_code`, 
-        `ca`.`id` AS `credit_account_id`, 
+    `ca`.`id` AS `credit_account_id`, 
     `ca`.`name` AS `credit_account_name`, 
     `ca`.`code` AS `credit_account_code`, 
     case when `je`.`entry_type` in ('income', 'opening_balance') then coalesce(`dl`.`debit`, `cl`.`credit`, 0) when `je`.`entry_type` = 'transfer' 
@@ -113,7 +85,7 @@ return new class extends Migration
             `journal_entries` `je` 
             left join `journal_entry_lines` `dl` on(
               `dl`.`journal_entry_id` = `je`.`id` 
-              and `dl`.`debit` > 0
+              and `dl`.`debit` is not null
             )
           ) 
           left join `chart_of_accounts` `da` on(
@@ -122,7 +94,7 @@ return new class extends Migration
         ) 
         left join `journal_entry_lines` `cl` on(
           `cl`.`journal_entry_id` = `je`.`id` 
-          and `cl`.`credit` > 0
+          and `cl`.`credit` is not null
         )
       ) 
       left join `chart_of_accounts` `ca` on(
@@ -131,7 +103,7 @@ return new class extends Migration
     ) 
   where 
     `je`.`entry_type` = 'transfer' 
-union all 
+  union all 
   select 
     `je`.`id` AS `entry_id`, 
     `je`.`user_id` AS `user_id`, 
@@ -157,7 +129,7 @@ union all
             `journal_entries` `je` 
             left join `journal_entry_lines` `dl` on(
               `dl`.`journal_entry_id` = `je`.`id` 
-              and `dl`.`debit` > 0
+              and `dl`.`debit` is not null
             )
           ) 
           left join `chart_of_accounts` `da` on(
@@ -166,7 +138,7 @@ union all
         ) 
         left join `journal_entry_lines` `cl` on(
           `cl`.`journal_entry_id` = `je`.`id` 
-          and `cl`.`credit` > 0
+          and `cl`.`credit` is not null
         )
       ) 
       left join `chart_of_accounts` `ca` on(
@@ -177,8 +149,6 @@ union all
     `je`.`entry_type` = 'transfer'
 ) 
 select 
--- SUM(debit), SUM(credit)
-
   `main_table`.`entry_id` AS `entry_id`, 
   `main_table`.`user_id` AS `user_id`, 
   `main_table`.`entry_date` AS `entry_date`, 

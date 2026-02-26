@@ -51,7 +51,7 @@
 
 <body class="bg-dark">
     <div id="wrapper" class="text-bg-dark ">
-
+        <div id="sidebar-overlay" class="d-none"></div>
         @include('components.sidebar')
         <div id="page-content-wrapper" class="bg-dark">
             @include('components.header')

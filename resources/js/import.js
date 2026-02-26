@@ -1386,7 +1386,7 @@ let raw_accounts = [{
         "code": "900.1",
         "parent_code": 900,
         "parent_id": 10,
-        "type": "expense"
+        "type": "income"
     },
     {
         "id": 176,
@@ -1394,7 +1394,7 @@ let raw_accounts = [{
         "code": "900.2",
         "parent_code": 900,
         "parent_id": 10,
-        "type": "expense"
+        "type": "income"
     }
 ];
 

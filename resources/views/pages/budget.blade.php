@@ -2,6 +2,7 @@
 
 @section('content')
 <input id="data_url" type="hidden" value='{{route("api.budget")}}'>
+<input id="data_url_save" type="hidden" value='{{route("api.budget.save")}}'>
 <div class="d-flex justify-content-between align-items-center mb-2">
     <div>
         <h3 id="main_title" class="display">Presupuesto</h3>
@@ -9,9 +10,9 @@
     </div>
 </div>
 <div class="row g-4 mt-1">
-    <div class="col-auto text-start">
+    <div class="col-auto text-start d-none">
         <select class="form-select card-dark border border-dark text-dark" name="month" id="month-filter">
-            <option value="1" selected>Enero</option>
+            <option value="1">Enero</option>
             <option value="2">Febrero</option>
             <option value="3">Marzo</option>
             <option value="4">Abril</option>
@@ -22,24 +23,30 @@
             <option value="9">Septiembre</option>
             <option value="10">Octubre</option>
             <option value="11">Noviembre</option>
-            <option value="12">Diciembre</option>
-
+            <option value="12" selected>Diciembre</option>
         </select>
     </div>
     <div class="col-auto text-start">
         <select class="form-select card-dark border border-dark text-dark" name="year" id="year-filter">
-            <option value="2026" selected>2026</option>
-            <option value="2025">2025</option>
+            <option value="2026">2026</option>
+            <option value="2025" selected>2025</option>
         </select>
     </div>
     <div class="col-auto">
         <button id="refresh" class="btn btn-primary"><i class="fas fa-refresh"></i></button>
     </div>
-    <div class="col-12 text-dark">
-        <div class="row g-4" id="cards-header"></div>
+    <div class="col-auto">
+        <button id="save" class="btn btn-primary"><i class="fas fa-save"></i></button>
     </div>
     <div class="col-12 text-dark">
-        <div class="row g-4" id="cards-container"></div>
+        <div class="row g-4" id="cards-header">
+            @include("components.loading.cards_header")
+        </div>
+    </div>
+    <div class="col-12 text-dark">
+        <div class="row g-4" id="cards-container">
+            @include("components.loading.cards_body")
+        </div>
     </div>
 </div>
 <template id="tableTemplate" class="table_template">
@@ -48,9 +55,28 @@
         <div class="text-end">
             <span class="badge text-bg-primary">%amount%</span>
             <span class="badge text-bg-secondary">%percent%%</span>
-            <span class="badge text-bg-secondary">%percent_group%%</span>
         </div>
     </li>
+    <!-- <div class="col-12 col-md-12 col-lg-6 col-xl-4">
+        <div class="text-bg-white border border-dark card card-dark h-100 position-relative">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div class="flex-grow-1">
+                        <div class="fw-semibold text-dark">%title%</div>
+                        <div class="text-muted small">%code%</div>
+                    </div>
+                    <div class="ms-3 fw-semibold">
+                        <div class="col-12 text-dark text-end">
+                            %amount%
+                        </div>
+                        <div class="col-12 text-muted text-end">
+                            %percent%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> -->
 </template>
 @vite(["resources/js/budget.js"])
 

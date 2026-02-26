@@ -148,14 +148,24 @@ function setButtonLoading(button, isLoading) {
 }
 window.setButtonLoading=setButtonLoading;
 
-window.addEventListener('DOMContentLoaded', event => {
-    const sidebarToggle = document.body.querySelector('#sidebarToggle');
-    if (sidebarToggle) {
-        sidebarToggle.addEventListener('click', event => {
-            event.preventDefault();
-            document.body.classList.toggle('sb-sidenav-toggled');
-        });
-    }
+document.addEventListener('DOMContentLoaded', function () {
+    const toggleBtn = document.getElementById('sidebarToggle');
+    const overlay = document.getElementById('sidebar-overlay');
+    toggleBtn?.addEventListener('click', function () {
+        document.body.classList.toggle('sb-sidenav-toggled');
+        if(document.querySelector("body").classList.contains("sb-sidenav-toggled")){
+            overlay.classList.remove("d-none");
+        }else{
+            overlay.classList.add("d-none");
+
+        }
+    });
+
+    overlay.addEventListener('click', function () {
+        document.body.classList.remove('sb-sidenav-toggled');
+            overlay.classList.add("d-none");
+
+    });
 });
 
 function getEntryIcon(type) {
@@ -197,6 +207,29 @@ function getEntryIcon(type) {
 function isMobile() {
     return window.matchMedia('(max-width: 768px)').matches;
 }
+
+function formatMoney(value) {
+    return (Math.round(value * 100) / 100).toFixed(2);
+}
+function formatTextClass(value) {
+    if(value == 0){
+        return "text-muted";
+    }else if(value >= 0){
+        return "text-success";
+    }else{
+        return "text-danger";
+    }
+}
+function formatCurrency(value) {
+    return value.toLocaleString('es-MX', {
+        style: 'currency',
+        currency: 'MXN'
+    });
+}
+
+window.formatMoney=formatMoney;
+window.formatTextClass=formatTextClass;
+window.formatCurrency=formatCurrency;
 window.isMobile=isMobile;
 
 window.getEntryIcon=getEntryIcon;

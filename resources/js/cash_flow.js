@@ -19,7 +19,7 @@ function initRequest() {
         .then(res => res.json())
         .then(data => {
             console.log(data);
-            buildHeaderCards(data.total);
+            buildHeaderCards(data.map);
             buildCards(data.data);
             // params.success(data);
         })
@@ -52,7 +52,7 @@ function buildHeaderCards(data) {
                         <h6 class="my-0"><i class="fa ${group.icon} text-primary" aria-hidden="true"></i></h6>
                     </div>
                     <div class="col-12">
-                        <h3 id="revenue-value" class="my-0 fw-bold">${group.total}</h3>
+                        <h3 id="revenue-value" class="${formatTextClass(group.total)} my-0 fw-bold">${formatCurrency(group.total)}</h3>
                     </div>
                 </div>
             </div>
@@ -68,25 +68,19 @@ function buildHeaderCards(data) {
 function buildCards(data){
     const container = document.getElementById('cards-container');
 container.innerHTML = "";
-const formatCurrency = (value) =>
-    value.toLocaleString('es-MX', {
-        style: 'currency',
-        currency: 'MXN'
-    });
 
 data.forEach(section => {
 
-    const totalClass = section.total >= 0 ? 'text-success' : 'text-danger';
 
     const card = document.createElement('div');
     card.className = 'col-12 col-md-6 col-xl-4';
 
     card.innerHTML = `
         <div class="card card-dark border border-dark h-100 shadow-sm">
-            <div class="card-body p-4">
+            <div class="card-body p-4 text-dark">
 
                 <!-- Header -->
-                <div class="mb-3 fs-4 fw-bold ${totalClass}">
+                <div class="mb-3 fs-4 fw-bold ${formatTextClass(section.total)}">
                     ${formatCurrency(section.total)}
                 </div>
                 <div class="d-flex align-items-center mb-3">
@@ -126,3 +120,4 @@ data.forEach(section => {
     container.appendChild(card);
 });
 }
+document.getElementById("refresh").addEventListener("click", initRequest);

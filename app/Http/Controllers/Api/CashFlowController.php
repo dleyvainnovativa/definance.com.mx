@@ -14,6 +14,21 @@ class CashFlowController extends Controller
         $userId = $request->user()->id;
         $month = $request->get('month', now()->month);
         $year = $request->get('year', now()->year);
+        $cash_flow = self::getCashFlow($userId, $month, $year);
+        $last_cash_flow = self::getCashFlowTotal($userId, self::getLastMonth($month, $year), self::getLastYear($month, $year));
+        $month_variation = $cash_flow["total"] - $last_cash_flow;
+        $cash_flow["total_map"][3]["total"] = $month_variation;
+
+        return response()->json(
+            [
+                "map" => $cash_flow["total_map"],
+                'data'   => $cash_flow["data"],
+                'total' => $month_variation
+            ],
+        );
+    }
+    public static function getCashFlow($userId, $month, $year)
+    {
         $results = TrialBalanceController::getTrialBalance($userId, $month, $year)->get();
         $total = 0;
         $totalOpening = 0;
@@ -325,7 +340,7 @@ class CashFlowController extends Controller
         unset($section);
         $totalMap = round($totalMap, 2);
         $totalFinal = round($totalOpening + $totalMap, 2);
-        $totalMap = [
+        $totalMapped = [
             [
                 "title" => "SALDO INICIAL DE EFECTIVO",
                 "icon"  => "fa-wallet",
@@ -337,7 +352,7 @@ class CashFlowController extends Controller
                 "total" => $totalFinal
             ],
             [
-                "title" => "SALDO EN BALANZA DE COMPROBACIÓN",
+                "title" => "SALDO EN B. DE COMP",
                 "icon"  => "fa-scale-balanced",
                 "total" => $total
             ],
@@ -347,12 +362,33 @@ class CashFlowController extends Controller
                 "total" => $totalFinal - $total
             ],
         ];
+        $data["total_map"] = $totalMapped;
+        $data["data"] = $prefixMap;
+        $data["total"] = $total;
+        return $data;
+    }
 
-        return response()->json(
-            [
-                "total" => $totalMap,
-                'data'   => $prefixMap,
-            ],
-        );
+    public static function getCashFlowTotal($userId, $month, $year)
+    {
+        $results = TrialBalanceController::getTrialBalance($userId, $month, $year)->get();
+        $total = 0;
+        foreach ($results as $entry) {
+            if (
+                str_starts_with($entry->account_code, '100.1') ||
+                str_starts_with($entry->account_code, '100.2')
+            ) {
+                $total += $entry->total;
+            }
+        }
+        return $total;
+    }
+
+    private static function getLastMonth(int $month, int $year): int
+    {
+        return $month === 1 ? 12 : $month - 1;
+    }
+    private static function getLastYear(int $month, int $year): int
+    {
+        return $month === 1 ? $year - 1 : $year;
     }
 }

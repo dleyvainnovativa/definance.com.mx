@@ -32,11 +32,18 @@
             <option value="2025">2025</option>
         </select>
     </div>
-    <div class="col-12 text-dark">
-        <div class="row g-4" id="cards-header"></div>
+    <div class="col-auto">
+        <button id="refresh" class="btn btn-primary"><i class="fas fa-refresh"></i></button>
     </div>
     <div class="col-12 text-dark">
-        <div class="row g-4" id="cards-container"></div>
+        <div class="row g-4" id="cards-header">
+            @include("components.loading.cards_header")
+        </div>
+    </div>
+    <div class="col-12 text-dark">
+        <div class="row g-4" id="cards-container">
+            @include("components.loading.cards_body")
+        </div>
     </div>
 </div>
 <template id="tableTemplate" class="table_template">

@@ -22,100 +22,10 @@ class TrialBalanceController extends Controller
         $search = $request->get('search');
         $limit = (int) $request->get('limit', 10);
 
-        // --- Subconsulta para 'debit' CTE ---
-        $debitQuery = DB::table('journal_voucher')
-            ->select('user_id', 'debit_account_id as account_id', 'debit_account_code as account_code', 'debit_account_name as account_name', DB::raw('SUM(debit) as debit'))
-            ->whereMonth('entry_date', $month)
-            ->whereYear('entry_date', $year)
-            ->groupBy('user_id', 'debit_account_id', 'debit_account_code', 'debit_account_name');
-
-        // --- Subconsulta para 'credit' CTE ---
-        $creditQuery = DB::table('journal_voucher')
-            ->select('user_id', 'credit_account_id as account_id', 'credit_account_code as account_code', 'credit_account_name as account_name', DB::raw('SUM(credit) as credit'))
-            ->whereMonth('entry_date', $month)
-            ->whereYear('entry_date', $year)
-            ->groupBy('user_id', 'credit_account_id', 'credit_account_code', 'credit_account_name');
-
-        // --- Subconsulta para 'opening' CTE ---
-        $openingQuery = DB::table('accounts as a')
-            ->select(
-                'a.id as account_id',
-                'a.nature as nature',
-                'a.nature_label as nature_label',
-                'a.type_account as type_account',
-                'a.type as type',
-                'a.code as account_code',
-                'a.name as account_name',
-                'a.user_id',
-                DB::raw('COALESCE(SUM(CASE WHEN j.debit_account_id = a.id THEN j.debit WHEN j.credit_account_id = a.id THEN j.credit ELSE 0 END), 0) as amount')
-            )
-            ->leftJoin('journal as j', function ($join) use ($month, $year) {
-                $join->on(function ($query) {
-                    $query->on('a.id', '=', 'j.debit_account_id')->orOn('a.id', '=', 'j.credit_account_id');
-                })
-                    ->whereIn('j.entry_type', ['opening_balance', 'opening_balance_credit'])
-                    ->whereMonth('j.entry_date', $month)
-                    ->whereYear('j.entry_date', $year);
-            })
-            ->groupBy('a.id', 'a.code', 'a.name', 'a.user_id');
-
-        // --- Subconsulta para 'main_table' CTE (La parte del UNION ALL) ---
-        // Se construye como una variable de PHP para usarla en el JOIN final.
-        $mainTableQuery = DB::table(DB::raw("({$debitQuery->toSql()}) as d"))
-            ->mergeBindings($debitQuery) // ¡Importante! Pasar los bindings de la subconsulta
-            ->select('d.user_id', 'd.account_id', 'd.account_code', 'd.account_name', 'd.debit', DB::raw('COALESCE(c.credit, 0) as credit'))
-            ->leftJoinSub($creditQuery, 'c', function ($join) {
-                $join->on('d.account_id', '=', 'c.account_id');
-            })
-            ->unionAll(
-                DB::table(DB::raw("({$creditQuery->toSql()}) as c"))
-                    ->mergeBindings($creditQuery)
-                    ->select('c.user_id', 'c.account_id', 'c.account_code', 'c.account_name', DB::raw('0'), 'c.credit')
-                    ->leftJoinSub($debitQuery, 'd', function ($join) {
-                        $join->on('c.account_id', '=', 'd.account_id');
-                    })
-                    ->whereNull('d.account_id')
-            );
-
-        // --- Consulta Final Uniendo Todo ---
-        // Esta es la parte que finalmente se ejecuta.
-        $finalQuery = DB::query()
-            ->fromSub($openingQuery, 'op') // Usa la subconsulta 'opening' como tabla base 'op'
-            ->leftJoinSub($mainTableQuery, 'mt', function ($join) {
-                $join->on('op.account_id', '=', 'mt.account_id');
-            })
-            ->select(
-                'op.user_id',
-                'op.nature',
-                'op.nature_label',
-                'op.type',
-                'op.type_account',
-                'op.account_id',
-                'op.account_code',
-                'op.account_name',
-                DB::raw('COALESCE(op.amount, 0) as opening'),
-                DB::raw('COALESCE(mt.debit, 0) as debit'),
-                DB::raw('COALESCE(mt.credit, 0) as credit'),
-                DB::raw("
-                    CASE 
-                        WHEN op.nature COLLATE utf8mb4_unicode_ci = 'debit'
-                            THEN COALESCE(op.amount, 0) 
-                                + COALESCE(mt.debit, 0) 
-                                - COALESCE(mt.credit, 0)
-                        WHEN op.nature COLLATE utf8mb4_unicode_ci = 'credit'
-                            THEN COALESCE(op.amount, 0) 
-                                + COALESCE(mt.credit, 0) 
-                                - COALESCE(mt.debit, 0)
-                        ELSE 0
-                    END AS total
-                ")
-            )
-            ->where('op.user_id', $userId) // Filtro principal por usuario
-            ->when($search, function ($q) use ($search) {
-                $q->where('op.account_name', 'like', "%{$search}%")
-                    ->orWhere('op.account_code', 'like', "%{$search}%");
-            })
-            ->orderBy('op.account_code');
+        $finalQuery = self::getTrialBalance($userId, $month, $year)->when($search, function ($q) use ($search) {
+            $q->where('op.account_name', 'like', "%{$search}%")
+                ->orWhere('op.account_code', 'like', "%{$search}%");
+        });
 
         $totals = clone $finalQuery;
         $allEntries = $totals->get();
@@ -182,27 +92,76 @@ class TrialBalanceController extends Controller
             ->groupBy('user_id', 'credit_account_id', 'credit_account_code', 'credit_account_name');
 
         // --- Subconsulta para 'opening' CTE ---
-        $openingQuery = DB::table('accounts as a')
+        // $openingQuery = DB::table('accounts as a')
+        //     ->select(
+        //         'a.id as account_id',
+        //         'a.nature as nature',
+        //         'a.nature_label as nature_label',
+        //         'a.type_account as type_account',
+        //         'a.type as type',
+        //         'a.code as account_code',
+        //         'a.name as account_name',
+        //         'a.user_id',
+        //         DB::raw('COALESCE(SUM(CASE WHEN j.debit_account_id = a.id THEN j.debit WHEN j.credit_account_id = a.id THEN j.credit ELSE 0 END), 0) as amount')
+        //     )
+        //     ->leftJoin('journal as j', function ($join) use ($month, $year) {
+        //         $join->on(function ($query) {
+        //             $query->on('a.id', '=', 'j.debit_account_id')->orOn('a.id', '=', 'j.credit_account_id');
+        //         })
+        //             ->whereIn('j.entry_type', ['opening_balance', 'opening_balance_credit'])
+        //             ->whereMonth('j.entry_date', $month)
+        //             ->whereYear('j.entry_date', $year);
+        //     })
+        //     ->groupBy('a.id', 'a.code', 'a.name', 'a.user_id');
+
+        $lastDay = Carbon::create($year, $month, 1)->endOfMonth();
+
+        $openingJournalQuery = DB::table('accounts as a')
             ->select(
                 'a.id as account_id',
-                'a.nature as nature',
-                'a.nature_label as nature_label',
-                'a.type_account as type_account',
-                'a.type as type',
                 'a.code as account_code',
                 'a.name as account_name',
+                'a.nature as nature',
+                'a.nature_label as nature_label',
+                'a.type as type',
+                'a.type_account as type_account',
                 'a.user_id',
-                DB::raw('COALESCE(SUM(CASE WHEN j.debit_account_id = a.id THEN j.debit WHEN j.credit_account_id = a.id THEN j.credit ELSE 0 END), 0) as amount')
+                'j.entry_date',
+                'j.entry_id',
+                DB::raw('CASE
+                  WHEN j.debit_account_id = a.id THEN j.debit
+                  WHEN j.credit_account_id = a.id THEN j.credit
+                  ELSE 0
+                END AS amount'),
+                DB::raw('ROW_NUMBER() OVER (
+                  PARTITION BY a.id
+                  ORDER BY j.entry_date DESC, j.entry_id DESC
+                ) AS rn')
+
             )
-            ->leftJoin('journal as j', function ($join) use ($month, $year) {
+            ->leftJoin('journal as j', function ($join) use ($lastDay) {
                 $join->on(function ($query) {
                     $query->on('a.id', '=', 'j.debit_account_id')->orOn('a.id', '=', 'j.credit_account_id');
                 })
                     ->whereIn('j.entry_type', ['opening_balance', 'opening_balance_credit'])
-                    ->whereMonth('j.entry_date', $month)
-                    ->whereYear('j.entry_date', $year);
-            })
-            ->groupBy('a.id', 'a.code', 'a.name', 'a.user_id');
+                    ->whereDate('j.entry_date', '<=', $lastDay);
+            });
+
+        $openingQuery = DB::query()
+            ->fromSub($openingJournalQuery, 'op') // Usa la subconsulta 'opening' como tabla base 'op'
+            ->select(
+                'op.account_id',
+                'op.account_code',
+                'op.account_name',
+                'op.nature',
+                'op.nature_label',
+                'op.type',
+                'op.type_account',
+                'op.user_id',
+                DB::raw('COALESCE(amount, 0) AS amount')
+            )
+            ->where('op.rn', 1)
+            ->orderBy("op.account_code");
 
         // --- Subconsulta para 'main_table' CTE (La parte del UNION ALL) ---
         // Se construye como una variable de PHP para usarla en el JOIN final.
@@ -256,10 +215,140 @@ class TrialBalanceController extends Controller
                 ")
             )
             ->where('op.user_id', $userId)
+            // ->orderBy("op.account_code");
             ->orderByRaw("
-                CAST(SUBSTRING_INDEX(op.account_code, '.', 1) AS UNSIGNED),
-                CAST(SUBSTRING_INDEX(op.account_code, '.', -1) AS UNSIGNED)
-            ");
+    CAST(SUBSTRING_INDEX(op.account_code, '.', 1) AS UNSIGNED),
+    CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(op.account_code, '.', 2), '.', -1) AS UNSIGNED),
+    CAST(SUBSTRING_INDEX(op.account_code, '.', -1) AS UNSIGNED)
+");
+
+        // $results = $finalQuery->get();
+
+        return $finalQuery;
+    }
+    public static function getTrialBalanceSummary($userId, $month, $year)
+    {
+        // --- Subconsulta para 'debit' CTE ---
+        $debitQuery = DB::table('journal_voucher')
+            ->select('user_id', 'debit_account_id as account_id', 'debit_account_code as account_code', 'debit_account_name as account_name', DB::raw('SUM(debit) as debit'))
+            ->whereRaw('MONTH(entry_date) <= ?', [$month])
+            ->whereYear('entry_date', $year)
+            ->groupBy('user_id', 'debit_account_id', 'debit_account_code', 'debit_account_name');
+
+        // --- Subconsulta para 'credit' CTE ---
+        $creditQuery = DB::table('journal_voucher')
+            ->select('user_id', 'credit_account_id as account_id', 'credit_account_code as account_code', 'credit_account_name as account_name', DB::raw('SUM(credit) as credit'))
+            ->whereRaw('MONTH(entry_date) <= ?', [$month])
+            ->whereYear('entry_date', $year)
+            ->groupBy('user_id', 'credit_account_id', 'credit_account_code', 'credit_account_name');
+
+        $lastDay = Carbon::create($year, 1, 1)->endOfMonth();
+
+        $openingJournalQuery = DB::table('accounts as a')
+            ->select(
+                'a.id as account_id',
+                'a.code as account_code',
+                'a.name as account_name',
+                'a.nature as nature',
+                'a.nature_label as nature_label',
+                'a.type as type',
+                'a.type_account as type_account',
+                'a.user_id',
+                'j.entry_date',
+                'j.entry_id',
+                DB::raw('CASE
+                  WHEN j.debit_account_id = a.id THEN j.debit
+                  WHEN j.credit_account_id = a.id THEN j.credit
+                  ELSE 0
+                END AS amount'),
+                DB::raw('ROW_NUMBER() OVER (
+                  PARTITION BY a.id
+                  ORDER BY j.entry_date DESC, j.entry_id DESC
+                ) AS rn')
+
+            )
+            ->leftJoin('journal as j', function ($join) use ($lastDay) {
+                $join->on(function ($query) {
+                    $query->on('a.id', '=', 'j.debit_account_id')->orOn('a.id', '=', 'j.credit_account_id');
+                })
+                    ->whereIn('j.entry_type', ['opening_balance', 'opening_balance_credit'])
+                    ->whereDate('j.entry_date', '<=', $lastDay);
+            });
+
+        $openingQuery = DB::query()
+            ->fromSub($openingJournalQuery, 'op') // Usa la subconsulta 'opening' como tabla base 'op'
+            ->select(
+                'op.account_id',
+                'op.account_code',
+                'op.account_name',
+                'op.nature',
+                'op.nature_label',
+                'op.type',
+                'op.type_account',
+                'op.user_id',
+                DB::raw('COALESCE(amount, 0) AS amount')
+            )
+            ->groupBy("account_name", "account_code", "nature", "type", "type_account", "user_id")
+
+            ->orderBy("op.account_code");
+
+        // --- Subconsulta para 'main_table' CTE (La parte del UNION ALL) ---
+        // Se construye como una variable de PHP para usarla en el JOIN final.
+        $mainTableQuery = DB::table(DB::raw("({$debitQuery->toSql()}) as d"))
+            ->mergeBindings($debitQuery) // ¡Importante! Pasar los bindings de la subconsulta
+            ->select('d.user_id', 'd.account_id', 'd.account_code', 'd.account_name', 'd.debit', DB::raw('COALESCE(c.credit, 0) as credit'))
+            ->leftJoinSub($creditQuery, 'c', function ($join) {
+                $join->on('d.account_id', '=', 'c.account_id');
+            })
+            ->unionAll(
+                DB::table(DB::raw("({$creditQuery->toSql()}) as c"))
+                    ->mergeBindings($creditQuery)
+                    ->select('c.user_id', 'c.account_id', 'c.account_code', 'c.account_name', DB::raw('0'), 'c.credit')
+                    ->leftJoinSub($debitQuery, 'd', function ($join) {
+                        $join->on('c.account_id', '=', 'd.account_id');
+                    })
+                    ->whereNull('d.account_id')
+            );
+
+        // --- Consulta Final Uniendo Todo ---
+        // Esta es la parte que finalmente se ejecuta.
+        $finalQuery = DB::query()
+            ->fromSub($openingQuery, 'op') // Usa la subconsulta 'opening' como tabla base 'op'
+            ->leftJoinSub($mainTableQuery, 'mt', function ($join) {
+                $join->on('op.account_id', '=', 'mt.account_id');
+            })
+            ->select(
+                'op.user_id',
+                'op.nature',
+                'op.nature_label',
+                'op.type',
+                'op.type_account',
+                'op.account_id',
+                'op.account_code',
+                'op.account_name',
+                DB::raw('COALESCE(op.amount, 0) as opening'),
+                DB::raw('COALESCE(mt.debit, 0) as debit'),
+                DB::raw('COALESCE(mt.credit, 0) as credit'),
+                DB::raw("
+                    CASE 
+                        WHEN op.nature COLLATE utf8mb4_unicode_ci = 'debit'
+                            THEN (COALESCE(op.amount, 0) 
+                                + COALESCE(mt.debit, 0) 
+                                - COALESCE(mt.credit, 0)) / $month
+                        WHEN op.nature COLLATE utf8mb4_unicode_ci = 'credit'
+                            THEN (COALESCE(op.amount, 0) 
+                                + COALESCE(mt.credit, 0) 
+                                - COALESCE(mt.debit, 0)) / $month
+                        ELSE 0
+                    END AS total
+                ")
+            )
+            ->where('op.user_id', $userId)
+            ->orderBy("op.account_code");
+        // ->orderByRaw("
+        //     CAST(SUBSTRING_INDEX(op.account_code, '.', 1) AS UNSIGNED),
+        //     CAST(SUBSTRING_INDEX(op.account_code, '.', -1) AS UNSIGNED)
+        // ");
 
         // $results = $finalQuery->get();
 

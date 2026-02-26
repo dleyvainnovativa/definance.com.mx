@@ -17,7 +17,7 @@
                 </div>
             </a>
             <ul class="dropdown-menu dropdown-menu-end mt-3 card-dark border border-dark">
-                <li><a class="dropdown-item" href="#">Perfil</a></li>
+                <!-- <li><a class="dropdown-item" href="#">Perfil</a></li> -->
                 <li><a class="dropdown-item" href="{{route('logout')}}">Cerrar Sesión</a></li>
             </ul>
         </div>

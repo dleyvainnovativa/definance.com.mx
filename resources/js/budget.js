@@ -2,9 +2,9 @@ function initRequest() {
     const token = localStorage.getItem('finance_auth_token');
     let data_url = document.getElementById("data_url").value;
     let params = null;
-        const url = new URL(data_url);
+    const url = new URL(data_url);
 
-const month = document.getElementById('month-filter')?.value;
+    const month = document.getElementById('month-filter')?.value;
     const year = document.getElementById('year-filter')?.value;
 
     if (month) url.searchParams.set('month', month);
@@ -20,7 +20,7 @@ const month = document.getElementById('month-filter')?.value;
         .then(data => {
             // console.log(data);
             buildHeaderCards(data.data);
-            buildCards(data.data);
+            buildCards(data.data, year);
             // params.success(data);
         })
         .catch((error) => {
@@ -47,7 +47,7 @@ function buildHeaderCards(data) {
                         <h6 class="my-0"><i class="fa ${group.icon} text-primary" aria-hidden="true"></i></h6>
                     </div>
                     <div class="col-12">
-                        <h3 id="revenue-value" class="my-0 fw-bold">${group.total}</h3>
+                        <h3 id="revenue-value" class="${formatTextClass(group.total)} my-0 fw-bold">${formatCurrency(group.total)}</h3>
                     </div>
                 </div>
             </div>
@@ -61,16 +61,16 @@ function buildHeaderCards(data) {
     document.getElementById('cards-header').innerHTML = html;
 }
 
-function buildCards(data) {
+function buildCards(data, year) {
     let html = '';
     data.forEach(group => {
         const colClass = group.display === 'operation' ?
-            'col-12 col-md-12 col-lg-12 col-xl-6' :
+            'col-12 col-md-12 col-lg-12 col-xl-12' :
             'col-12';
         if (group.display === 'operation') {
             html += `
                 <div class="${colClass} ">
-                    <div class="card card-dark shadow-sm h-100 text-dark">
+                    <div class="card card-dark border border-dark shadow-sm h-100 text-dark">
                         <div class="card-body p-4">
                         
                             
@@ -94,8 +94,12 @@ function buildCards(data) {
                                 <tr class="">
                                     <th data-field="account_code" class="">Code</th>
                                     <th data-field="account_name" class="">Account</th>
-                                    <th data-field="amount" class="text-end">Monto</th>
-                                    <th data-field="percent" class="text-end">%</th>
+                                    <th data-field="total" class="text-end">Monto</th>
+                                    <th data-field="percent" class="text-end">Porcentaje</th>
+                                    <th data-field="pr" class="text-center">%PR</th>
+                                    <th data-field="annual" class="text-end">Anual</th>
+                                    <th data-field="pl" class="text-end">%PL</th>
+                                    <th data-field="monthly" class="text-end">Mensual</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -103,13 +107,26 @@ function buildCards(data) {
 
                 group.data.forEach(row => {
                     html += `
-                        <tr>
-                            <td>${row.account_code}</td>
-                            <td>${row.account_name}</td>
-                            <td class="text-end">${formatMoney(row.amount)}</td>
-                            <td class="text-end">${formatMoney(row.percent)}</td>
-                        </tr>
-                    `;
+<tr data-amount="${row.amount}" data-account="${row.account_id}">
+    <td>${row.account_code}</td>
+    <td>${row.account_name}</td>
+    <td class="text-end">${formatMoney(row.amount)}</td>
+    <td>${row.percent}</td>
+
+    <td class="text-end">
+        <input type="number"
+               class="form-control card-dark border border-dark text-dark form-control-sm text-end pr-input"
+               min="0"
+               max="100"
+               step="0.01"
+               value="${row.pr}">
+    </td>
+
+    <td class="text-end anual">${formatMoney(row.annual)}</td>
+    <td class="text-end pl">${row.pl}%</td>
+    <td class="text-end mensual">${formatMoney(row.monthly)}</td>
+</tr>
+`;
                 });
 
                 html += `
@@ -124,11 +141,15 @@ function buildCards(data) {
             html += `
                             <div class="mt-3 text-end">
                                 <strong>Total:</strong>
-                                <span class="ms-2">${formatMoney(group.total)}</span>
+                                <span class="ms-2">${formatCurrency(group.total)}</span>
                             </div>
-                            <div class="mt-1 text-end">
-                                <strong>Porcentaje:</strong>
-                                <span class="ms-2">${formatMoney(group.percent)}%</span>
+                            <div class="mt-3 text-end">
+                                <strong>Total Anual:</strong>
+                                <span class="ms-2">${formatCurrency(group.total_pl)}</span>
+                            </div>
+                            <div class="mt-3 text-end">
+                                <strong>Total Anual:</strong>
+                                <span class="ms-2">${formatCurrency(group.total_month)}</span>
                             </div>
                         </div>
                     </div>
@@ -155,7 +176,7 @@ function buildCards(data) {
                     <!-- Trailing amount -->
                     <div class="ms-3 fw-semibold">
                         <div class="col-12 text-dark text-end fs-5">
-                            ${group.total}
+                            ${formatCurrency(group.total)}
                         </div>
                         <div class="col-12 text-muted text-end fs-5">
                             ${group.percent}%
@@ -176,20 +197,69 @@ function buildCards(data) {
     });
     document.getElementById('cards-container').innerHTML = html;
     document.querySelectorAll('.js-bootstrap-table').forEach(table => {
-    const $table = $(table);
+        const $table = $(table);
 
-    $table.bootstrapTable(tableOptions);
+        $table.bootstrapTable(tableOptions);
+        table.addEventListener('input', e => {
+            if (e.target.classList.contains('pr-input')) {
+                const total_anually = recalcTable(table);
+            }
+        });
 
-    if (isMobile()) {
-        $table.bootstrapTable('toggleCustomView', true);
-    }
-});
+        if (isMobile()) {
+            $table.bootstrapTable('toggleCustomView', true);
+        }
+    });
 }
 
-function formatMoney(value) {
-    return (Math.round(value * 100) / 100).toFixed(2);
+function recalcTable(table) {
+    let total_anually = 0;
+
+    const rows = table.querySelectorAll('tbody tr');
+
+    // First pass → calculate Anual + total
+    rows.forEach(row => {
+        const amount = parseFloat(row.dataset.amount) || 0;
+        const pr = parseFloat(row.querySelector('.pr-input').value) || 0;
+
+        const anual = amount * (pr / 100);
+        row.querySelector('.anual').innerText = formatMoney(anual);
+
+        row.dataset.anual = anual;
+        total_anually += anual;
+    });
+
+    // Second pass → %PL and Mensual
+    rows.forEach(row => {
+        const anual = parseFloat(row.dataset.anual) || 0;
+
+        const pl = total_anually > 0 ? (anual / total_anually) * 100 : 0;
+        const mensual = anual / 12;
+
+        row.querySelector('.pl').innerText = pl.toFixed(2) + '%';
+        row.querySelector('.mensual').innerText = formatMoney(mensual);
+    });
+
+    return total_anually;
 }
 
+function buildPrJson(table) {
+    const result = [];
+
+    table.querySelectorAll('tbody tr').forEach(row => {
+        const accountId = row.dataset.account;
+        const pr = parseFloat(
+            row.querySelector('.pr-input')?.value
+        ) || 0;
+
+        result.push({
+            account_id: Number(accountId),
+            percent: pr
+        });
+    });
+
+    return result;
+}
 
 document.addEventListener('DOMContentLoaded', function () {
     $('#month-filter, #year-filter').on('change', function () {
@@ -206,8 +276,7 @@ function customViewFormatter(data) {
         let card = template
             .replace('%title%', row.account_name)
             .replace('%code%', row.account_code)
-            .replace('%amount%', row.amount > 0 ? formatMoney(row.amount) : "0.00")
-            .replace('%percent%', row.percent > 0 ? formatMoney(row.percent) : "0.00");
+            .replace('%amount%', row.total > 0 ? formatMoney(row.total) : "0.00")
 
         html += card;
     });
@@ -215,6 +284,42 @@ function customViewFormatter(data) {
     html += '</div>';
     return html;
 }
-window.customViewFormatter=customViewFormatter
+
+document.getElementById("save").addEventListener("click", saveFile);
+
+function saveFile() {
+    let complete = [];
+    let data_url = document.getElementById("data_url_save").value;
+
+    document.querySelectorAll('.js-bootstrap-table').forEach(table => {
+        const prJson = buildPrJson(table);
+        complete.push(...prJson);
+    });
+
+    const year = document.getElementById('year-filter')?.value || new Date().getFullYear();
+    const token = localStorage.getItem('finance_auth_token');
+    if (!token) return;
+    fetch(data_url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+            year: year,
+            data: complete
+        })
+    })
+    .then(res => res.json())
+    .then(res => {
+        console.log(res);
+        alert('PR saved successfully');
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Error saving PR');
+    });
+}
 
 document.getElementById("refresh").addEventListener("click", initRequest);
+window.customViewFormatter = customViewFormatter

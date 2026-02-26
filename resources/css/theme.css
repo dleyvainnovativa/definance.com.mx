@@ -626,6 +626,23 @@ hr{
 /* --- MOBILE LOGIC (max-width: 767.98px) --- */
 @media (max-width: 940px) {
 
+
+/* Sidebar Overlay */
+#sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+/* When sidebar is open */
+body.sb-sidenav-toggled #sidebar-overlay {
+    opacity: 1;
+    pointer-events: auto;
+}
+
     /* Mobile Toggled: Show Sidebar */
     body.sb-sidenav-toggled #sidebar-wrapper {
         margin-left: 0;
@@ -636,17 +653,7 @@ hr{
         position: sticky !important;
     }
 
-    /* Overlay when sidebar is open on mobile */
-    body.sb-sidenav-toggled #page-content-wrapper::before {
-        content: "";
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 999;
-    }
+    
 }
 
 /* --- STYLING DETAILS --- */
@@ -831,4 +838,42 @@ button.gridjs-sort-neutral{
         
         background-color: var(--card-color) !important;
         border-color: var(--muted-bg-color) !important;
+}
+
+
+.list-group-item.active i{
+    color: var(--white-color) !important;
+}
+.list-group-item.active small{
+    color: var(--white-color) !important;
+}
+
+.list-group-item-action i{
+    color: var(--primary-color) !important;
+}
+
+.list-group.list-group-flush {
+  overflow: scroll;
+  scrollbar-color: var(--muted-bg-color) transparent;
+  scrollbar-width: thin;
+}
+
+
+
+.shimmer {
+  background: var(--dark-color) !important;
+  mask: linear-gradient(-60deg, #0f6dd7 30%, rgba(168, 13, 13, 0.333), #d20d0d 70%) right/350% 100%;
+  animation: shimmer2 2.5s infinite;
+}
+
+.image-shimmer{
+    aspect-ratio: 1/1;
+    background: var(--dark-color);
+    height: 25vh;
+}
+
+@keyframes shimmer2 {
+  100% {
+    mask-position: left
+  }
 }

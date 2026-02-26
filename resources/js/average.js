@@ -47,7 +47,7 @@ function buildHeaderCards(data) {
                         <h6 class="my-0"><i class="fa ${group.icon} text-primary" aria-hidden="true"></i></h6>
                     </div>
                     <div class="col-12">
-                        <h3 id="revenue-value" class="${formatTextClass(group.total)} my-0 fw-bold">${formatCurrency(group.total)}</h3>
+                        <h3 id="revenue-value" class="${formatTextClass(group.total_sum)} my-0 fw-bold">${formatCurrency(group.total_sum)}</h3>
                     </div>
                 </div>
             </div>
@@ -94,8 +94,7 @@ function buildCards(data) {
                                 <tr class="">
                                     <th data-field="account_code" class="">Code</th>
                                     <th data-field="account_name" class="">Account</th>
-                                    <th data-field="amount" class="text-end">Monto</th>
-                                    <th data-field="percent" class="text-end">%</th>
+                                    <th data-field="total" class="text-end">Monto</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -106,8 +105,7 @@ function buildCards(data) {
                         <tr>
                             <td>${row.account_code}</td>
                             <td>${row.account_name}</td>
-                            <td class="text-end">${formatCurrency(row.amount)}</td>
-                            <td class="text-end">${formatMoney(row.percent)}</td>
+                            <td class="text-end">${formatMoney(row.total)}</td>
                         </tr>
                     `;
                 });
@@ -124,11 +122,7 @@ function buildCards(data) {
             html += `
                             <div class="mt-3 text-end">
                                 <strong>Total:</strong>
-                                <span class="ms-2">${formatCurrency(group.total)}</span>
-                            </div>
-                            <div class="mt-1 text-end">
-                                <strong>Porcentaje:</strong>
-                                <span class="ms-2">${formatMoney(group.percent)}%</span>
+                                <span class="ms-2">${formatCurrency(group.total_sum)}</span>
                             </div>
                         </div>
                     </div>
@@ -155,7 +149,7 @@ function buildCards(data) {
                     <!-- Trailing amount -->
                     <div class="ms-3 fw-semibold">
                         <div class="col-12 text-dark text-end fs-5">
-                            ${formatCurrency(group.total)}
+                            ${formatCurrency(group.total_sum)}
                         </div>
                         <div class="col-12 text-muted text-end fs-5">
                             ${group.percent}%
@@ -202,8 +196,7 @@ function customViewFormatter(data) {
         let card = template
             .replace('%title%', row.account_name)
             .replace('%code%', row.account_code)
-            .replace('%amount%', row.amount > 0 ? formatMoney(row.amount) : "0.00")
-            .replace('%percent%', row.percent > 0 ? formatMoney(row.percent) : "0.00");
+            .replace('%amount%', row.total > 0 ? formatMoney(row.total) : "0.00")
 
         html += card;
     });

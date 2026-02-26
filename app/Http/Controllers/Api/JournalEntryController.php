@@ -9,6 +9,7 @@ use App\Models\ChartOfAccount;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class JournalEntryController extends Controller
 {
@@ -149,7 +150,6 @@ class JournalEntryController extends Controller
         ]);
     }
 
-
     public function store(Request $request)
     {
         $request->validate([
@@ -163,35 +163,73 @@ class JournalEntryController extends Controller
             // 'applies_se' => ['nullable', 'boolean'],
             // 'applies_fe' => ['nullable', 'string'],
         ]);
+        $userId = $request->user()->id;
+        $entry_date = $request->entry_date;
+        $entry_type = $request->entry_type;
+        $description = $request->description;
+        $reference = $request->reference;
+        $amount = $request->amount;
+        $debit_account_id = $request->debit_account_id;
+        $credit_account_id = $request->credit_account_id;
 
-        DB::transaction(function () use ($request) {
-            $user = $request->user();
 
+        $month = self::getMonth($entry_date);
+        $year = self::getYear($entry_date);
+
+        // self::create($userId, $entry_date, $entry_type, $description, $reference, $amount, $debit_account_id, $credit_account_id);
+        $results = self::setOpening($request->debit_account_id, $request->credit_account_id, $month, $year, $userId);
+        return response()->json([$results, $month, $year], 201);
+
+        // return redirect()
+        //     ->back()
+        //     ->with('success', 'Movimiento registrado correctamente');
+    }
+
+    public function getMonth(string $date): int
+    {
+        return Carbon::parse($date)->month;
+    }
+    public function getYear(string $date): int
+    {
+        return Carbon::parse($date)->year;
+    }
+
+    private static function create($userId, $entry_date, $entry_type, $description, $reference, $amount, $debit_account_id, $credit_account_id)
+    {
+
+        DB::transaction(function () use (
+            $userId,
+            $entry_date,
+            $entry_type,
+            $description,
+            $reference,
+            $amount,
+            $debit_account_id,
+            $credit_account_id
+        ) {
             // 1️⃣ Create journal entry
             $entry = JournalEntry::create([
-                'user_id' => $user->id,
-                'entry_date' => $request->entry_date,
-                'entry_type' => $request->entry_type,
-                'description' => $request->description,
-                'reference' => $request->reference,
+                'user_id' => $userId,
+                'entry_date' => $entry_date,
+                'entry_type' => $entry_type,
+                'description' => $description,
+                'reference' => $reference,
             ]);
 
-            $amount = $request->amount;
-
-            if ($request->entry_type == "opening_balance" || $request->entry_type == "opening_balance_credit") {
-                if ($request->entry_type == "opening_balance") {
+            if ($entry_type == "opening_balance" || $entry_type == "opening_balance_credit") {
+                if ($entry_type == "opening_balance") {
                     // 2️⃣ Create debit line
                     JournalEntryLine::create([
                         'journal_entry_id' => $entry->id,
-                        'chart_of_account_id' => $request->debit_account_id,
+                        'chart_of_account_id' => $debit_account_id,
                         'debit' => $amount,
-                        'credit' => 0,
+                        'credit' => null,
                     ]);
                 } else {
                     JournalEntryLine::create([
                         'journal_entry_id' => $entry->id,
-                        'chart_of_account_id' => $request->debit_account_id,
-                        'debit' => 0,
+                        'chart_of_account_id' => $debit_account_id,
+                        'debit' => null,
                         'credit' => $amount,
                     ]);
                 }
@@ -200,25 +238,98 @@ class JournalEntryController extends Controller
                 // 2️⃣ Create debit line
                 JournalEntryLine::create([
                     'journal_entry_id' => $entry->id,
-                    'chart_of_account_id' => $request->debit_account_id,
+                    'chart_of_account_id' => $debit_account_id,
                     'debit' => $amount,
-                    'credit' => 0,
+                    'credit' => null,
                 ]);
 
                 // 3️⃣ Create credit line
                 JournalEntryLine::create([
                     'journal_entry_id' => $entry->id,
-                    'chart_of_account_id' => $request->credit_account_id,
-                    'debit' => 0,
+                    'chart_of_account_id' => $credit_account_id,
+                    'debit' => null,
                     'credit' => $amount,
                 ]);
             }
         });
-        return response()->json($request, 201);
+    }
 
-        // return redirect()
-        //     ->back()
-        //     ->with('success', 'Movimiento registrado correctamente');
+    private static function update(
+        $entry_id,
+        $userId,
+        $entry_date,
+        $entry_type,
+        $description,
+        $reference,
+        $amount,
+        $debit_account_id,
+        $credit_account_id
+    ) {
+        DB::transaction(function () use (
+            $entry_id,
+            $userId,
+            $entry_date,
+            $entry_type,
+            $description,
+            $reference,
+            $amount,
+            $debit_account_id,
+            $credit_account_id
+        ) {
+
+            // 1️⃣ Fetch entry (and ensure ownership)
+            $entry = JournalEntry::where('id', $entry_id)
+                ->where('user_id', $userId)
+                ->firstOrFail();
+
+            // 2️⃣ Update journal entry header
+            $entry->update([
+                'entry_date' => $entry_date,
+                'entry_type' => $entry_type,
+                'description' => $description,
+                'reference' => $reference,
+            ]);
+
+            // 3️⃣ Remove existing lines (safe & simple)
+            JournalEntryLine::where('journal_entry_id', $entry->id)->delete();
+
+            // 4️⃣ Re-create lines (same logic as create)
+            if ($entry_type === 'opening_balance' || $entry_type === 'opening_balance_credit') {
+
+                if ($entry_type === 'opening_balance') {
+                    JournalEntryLine::create([
+                        'journal_entry_id' => $entry->id,
+                        'chart_of_account_id' => $debit_account_id,
+                        'debit' => $amount,
+                        'credit' => null,
+                    ]);
+                } else {
+                    JournalEntryLine::create([
+                        'journal_entry_id' => $entry->id,
+                        'chart_of_account_id' => $debit_account_id,
+                        'debit' => null,
+                        'credit' => $amount,
+                    ]);
+                }
+            } else {
+
+                // Debit line
+                JournalEntryLine::create([
+                    'journal_entry_id' => $entry->id,
+                    'chart_of_account_id' => $debit_account_id,
+                    'debit' => $amount,
+                    'credit' => null,
+                ]);
+
+                // Credit line
+                JournalEntryLine::create([
+                    'journal_entry_id' => $entry->id,
+                    'chart_of_account_id' => $credit_account_id,
+                    'debit' => null,
+                    'credit' => $amount,
+                ]);
+            }
+        });
     }
 
     public function import(Request $request)
@@ -239,49 +350,111 @@ class JournalEntryController extends Controller
             $user = $request->user();
 
             foreach ($request->all() as $row) {
-
-                $entry = JournalEntry::create([
-                    'user_id' => $user->id,
-                    'entry_date' => $row['entry_date'],
-                    'entry_type' => $row['entry_type'],
-                    'description' => $row['description'],
-                    'reference' => $row['reference'] ?? null,
-                ]);
-
-                $amount = $row['amount'];
-
-                // 🟢 Debit line
-                if ($row['entry_type'] == "opening_balance_credit") {
-                    JournalEntryLine::create([
-                        'journal_entry_id' => $entry->id,
-                        'chart_of_account_id' => $row['debit_account_id'],
-                        'debit' => 0,
-                        'credit' => $amount,
-                    ]);
-                } else {
-                    JournalEntryLine::create([
-                        'journal_entry_id' => $entry->id,
-                        'chart_of_account_id' => $row['debit_account_id'],
-                        'debit' => $amount,
-                        'credit' => 0,
-                    ]);
-                }
-
-                // 🔵 Credit line (skip if null, like opening balance)
-                if (!empty($row['credit_account_id'])) {
-                    JournalEntryLine::create([
-                        'journal_entry_id' => $entry->id,
-                        'chart_of_account_id' => $row['credit_account_id'],
-                        'debit' => 0,
-                        'credit' => $amount,
-                    ]);
-                }
+                $month = self::getMonth($row["entry_date"]);
+                $year = self::getYear($row["entry_date"]);
+                $userId = $user->id;
+                Log::debug('ImportEntry', [$userId, $row['entry_date'], $row['entry_type'], $row['description'], $row['reference'], $row['amount'], $row['debit_account_id'], $row['credit_account_id']]);
+                self::create($userId, $row['entry_date'], $row['entry_type'], $row['description'], $row['reference'], $row['amount'], $row['debit_account_id'], $row['credit_account_id']);
+                self::setOpening($row["debit_account_id"], $row["credit_account_id"], $month, $year, $userId);
+                self::setOpening($row["credit_account_id"], $row["debit_account_id"], $month, $year, $userId);
+                // self::setOpeningDeficit($month, $year, $userId);
             }
         });
 
         return response()->json([
             'message' => 'Journal entries imported successfully'
         ], 201);
+    }
+
+    public static function setOpening($account_id, $credit_account_id, $month, $year, $userId)
+    {
+        $trial = TrialBalanceController::getTrialBalance($userId, $month, $year);
+        $results = $trial->where('op.account_id', $account_id)->get()->first();
+        $total = $results->total;
+        $nature = $results->nature;
+        $validation = self::validateOpening($userId, $account_id, $credit_account_id, $month, $year, $nature);
+        // dd($validation, $results, $total);
+        $opening_type = $nature == "debit" ? "opening_balance" : "opening_balance_credit";
+        $nextDate = $validation["date"];
+        if ($validation["new"] == true) {
+            Log::debug('NewOpening', [$userId, "$nextDate", $opening_type, "Saldo Inicial", "Saldo Inicial 4", $total, $account_id, $credit_account_id]);
+            // dd("new", $userId, "$nextDate", $opening_type, "Saldo Inicial", "Saldo Inicial 2", $total, $account_id, $credit_account_id);
+            self::create($userId, "$nextDate", $opening_type, "Saldo Inicial Nuevo", "Saldo Inicial", $total, $account_id, null);
+        } else {
+            $entry_id = $validation["entry_id"];
+            Log::debug('UpdateOpening', [$entry_id, $userId, "$nextDate", $opening_type, "Saldo Inicial", "Saldo Inicial 4", $total, $account_id, $credit_account_id]);
+            // dd("update", $entry_id, $userId, "$nextDate", $opening_type, "Saldo Inicial", "Saldo Inicial 4", $total, $account_id, $credit_account_id);
+            self::update($entry_id, $userId, "$nextDate", $opening_type, "Saldo Inicial Update", "Saldo Inicial", $total, $account_id, null);
+        }
+        return [$results, $validation];
+    }
+    // public static function setOpeningDeficit($month, $year, $userId)
+    // {
+    //     $income = IncomeStatementController::getIncomeStatement($userId, $month, $year);
+    //     $total = $income["total"];
+    //     $account = DB::table("accounts")->where("user_id", $userId)->where("account_code", "300.2")->get()->first();
+    //     $nature = $account->nature;
+    //     $account_id = $account->account_id;
+    //     $validation = self::validateOpening($userId, $account_id, $account_id, $month, $year, $nature);
+    //     dd($validation, $account, $total);
+    //     $opening_type = $nature == "debit" ? "opening_balance" : "opening_balance_credit";
+    //     $nextDate = $validation["date"];
+    //     if ($validation["new"] == true) {
+    //         Log::debug('NewOpeningDeficit', [$userId, "$nextDate", $opening_type, "Saldo Inicial", "Saldo Inicial 4", $total, $account_id, $account_id]);
+    //         self::create($userId, "$nextDate", $opening_type, "Saldo Inicial Nuevo", "Saldo Inicial", $total, $account_id, null);
+    //     } else {
+    //         $entry_id = $validation["entry_id"];
+    //         Log::debug('UpdateOpeningDeficit', [$entry_id, $userId, "$nextDate", $opening_type, "Saldo Inicial", "Saldo Inicial 4", $total, $account_id, $account_id]);
+    //         self::update($entry_id, $userId, "$nextDate", $opening_type, "Saldo Inicial Update", "Saldo Inicial", $total, $account_id, null);
+    //     }
+    //     return [$account, $validation];
+    // }
+    private static function validateOpening($userId, $account_id, $credit_account_id, $month, $year, $nature)
+    {
+        $nextMonth = self::getNextMonth($month, $year);
+        $nextYear = self::getNextYear($month, $year);
+        $nextEntryDate = "";
+        $query = DB::table('journal')
+            ->where('user_id', $userId)
+            ->where(function ($q) use ($account_id, $nature) {
+                if ($nature == "debit") {
+                    $q->where('debit_account_id', $account_id);
+                } elseif ($nature == "credit") {
+                    $q->where('credit_account_id', $account_id);
+                }
+                // ->orWhere('credit_account_id', $account_id);
+            })
+            ->whereMonth('entry_date', $nextMonth)
+            ->whereYear('entry_date', $nextYear)
+            ->whereIn('entry_type', [
+                'opening_balance',
+                'opening_balance_credit',
+            ]);
+        $journal = $query->get();
+        $queryRaw = "select * from `journal` where `user_id` = $userId and (`debit_account_id` = $account_id or `credit_account_id` = $account_id) and month(`entry_date`) = $nextMonth and year(`entry_date`) = $nextYear and `entry_type` in ('opening_balance', 'opening_balance_credit')";
+        // Log::debug('validateOpening', [$userId, $account_id, $credit_account_id, $month, $year, $nextMonth, $nextYear, $journal->isEmpty(), $queryRaw]);
+
+        if ($journal->isEmpty()) {
+            $validation["new"] = true;
+            $validation["entry_id"] = null;
+            $validation["date"] = sprintf('%04d-%02d-01', $nextYear, $nextMonth);
+            return $validation;
+        } else {
+            $validation["new"] = false;
+            $validation["entry_id"] = $journal[0]->entry_id;
+            $validation["date"] = sprintf('%04d-%02d-01', $nextYear, $nextMonth);
+            return $validation;
+        }
+    }
+
+    private static function getNextMonth(int $month, int $year): int
+    {
+        return $month === 12 ? 1 : $month + 1;
+    }
+
+    private static function getNextYear(int $month, int $year): int
+    {
+        return $month === 12 ? $year + 1 : $year;
     }
 
     public function voucher(Request $request)

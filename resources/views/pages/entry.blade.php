@@ -24,7 +24,7 @@
                         <!-- Entry type (UI helper only) -->
                         <div class="col-md-6">
                             <label class="form-label">Tipo de Movimiento</label>
-                            <select id="entry_type" class="form-select card-dark border border-dark" required>
+                            <select id="entry_type" class="form-select card-dark border border-dark text-dark" required>
                                 <option value="null" disabled selected>Seleccione...</option>
                                 <option value="income">INGRESO</option>
                                 <option value="expense">EGRESO</option>

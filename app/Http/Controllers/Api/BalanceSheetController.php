@@ -13,9 +13,17 @@ class BalanceSheetController extends Controller
         $month = $request->get('month', now()->month);
         // $month = 1;
         $year = $request->get('year', now()->year);
-        // $year = 2026;
+        $balanceSheet = self::getBalanceSheet($userId, $month, $year);
+        return response()->json(
+            [
+                'data'   => $balanceSheet["data"],
+                'total'   => $balanceSheet["total"],
+            ],
+        );
+    }
+    public static function getBalanceSheet($userId, $month, $year)
+    {
         $results = TrialBalanceController::getTrialBalance($userId, $month, $year)->get();
-
         $prefixMap = [
             [
                 'key' => 'assets',
@@ -79,7 +87,7 @@ class BalanceSheetController extends Controller
                 'icon' => 'fa-hand-holding-dollar',    // Equity = ownership value
                 'type'   => 'debit',
                 'title' => 'Patrimonio',
-                'codes' => ['300.'],
+                'codes' => ['300.2', '300.1'],
                 'display' => 'operation',
                 'total' => 0,
                 'divided' => "total",
@@ -92,7 +100,7 @@ class BalanceSheetController extends Controller
                 'icon' => 'fa-scale-balanced',          // Assets = Liabilities + Equity
                 'type'   => 'total',
                 'title' => 'SUMA TOTAL PASIVO + CAPITAL',
-                'codes' => ['200.', '300.'],
+                'codes' => ['200.', '300.1', '300.2'],
                 'calculate' => [
                     "plus" => ['liabilities', 'equity'],
                     "minus" => []
@@ -123,31 +131,57 @@ class BalanceSheetController extends Controller
                 }
 
                 foreach ($group['codes'] as $code) {
-                    if (str_starts_with($entry->account_code, $code)) {
-                        $parts = explode('.', $entry->account_code);
-                        $parentCode = $parts[0] . '.' . $parts[1];
+                    if ($code == "300.1") {
+                        break;
+                    } else {
 
-                        if (!isset($parentAccounts[$parentCode])) {
-                            // Look for the parent account in our map to get its real name
-                            $parentEntry = $accountNameMap->get($parentCode);
-                            $parentName = $parentEntry ? $parentEntry->account_name : 'Total ' . $parentCode;
+                        if (str_starts_with($entry->account_code, $code)) {
+                            $parts = explode('.', $entry->account_code);
+                            $parentCode = $parts[0] . '.' . $parts[1];
 
-                            $parentAccounts[$parentCode] = (object)[
-                                'account_code' => $parentCode,
-                                'account_name' => $parentName, // Use the real name here
-                                'amount' => 0,
-                                'percent' => 0
-                            ];
+                            if (!isset($parentAccounts[$parentCode])) {
+                                // Look for the parent account in our map to get its real name
+                                $parentEntry = $accountNameMap->get($parentCode);
+                                $parentName = $parentEntry ? $parentEntry->account_name : 'Total ' . $parentCode;
+
+                                $parentAccounts[$parentCode] = (object)[
+                                    'account_code' => $parentCode,
+                                    'account_name' => $parentName, // Use the real name here
+                                    'amount' => 0,
+                                    'percent' => 0
+                                ];
+                            }
+
+                            $amount = $entry->total ?? 0;
+                            $parentAccounts[$parentCode]->amount += $amount;
+                            $group['total'] += $amount;
+                            break; // Move to the next entry
                         }
-
-                        $amount = $entry->total ?? 0;
-                        $parentAccounts[$parentCode]->amount += $amount;
-                        $group['total'] += $amount;
-                        break; // Move to the next entry
                     }
                 }
             }
+            $group['data'] = array_values($parentAccounts);
+
             // Replace the group data with the aggregated parent accounts
+            $extraParentAccounts = [];
+            foreach ($group['codes'] as $code) {
+                if ($code == "300.1") {
+                    $amount = 0;
+                    for ($i = 1; $i <= $month; $i++) {
+                        $amount += IncomeStatementController::getIncomeStatement($userId, $i, $year)["total"];
+                    }
+                    $extraParentAccounts[0] = (object)[
+                        'account_code' => $code,
+                        'account_name' => "DEFICIT O REMANENTE DE EJERCICIO ANTERIORES", // Use the real name here
+                        'amount' => $amount,
+                        'percent' => 0
+                    ];
+                    $group['total'] += $amount;
+                    $parentAccounts = array_merge($parentAccounts, $extraParentAccounts);
+
+                    break;
+                }
+            }
             $group['data'] = array_values($parentAccounts);
         }
         unset($group);
@@ -203,11 +237,16 @@ class BalanceSheetController extends Controller
                 }
             }
         }
-
-        return response()->json(
-            [
-                'data'   => $prefixMap
-            ],
-        );
+        $data["data"] = $prefixMap;
+        $data["total"] = 0;
+        return $data;
+    }
+    private static function getLastMonth(int $month, int $year): int
+    {
+        return $month === 1 ? 12 : $month - 1;
+    }
+    private static function getLastYear(int $month, int $year): int
+    {
+        return $month === 1 ? $year - 1 : $year;
     }
 }

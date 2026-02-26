@@ -94,7 +94,9 @@ function buildCards(data) {
                                 <tr class="">
                                     <th data-field="account_code" class="">Code</th>
                                     <th data-field="account_name" class="">Account</th>
-                                    <th data-field="amount" class="text-end">Monto</th>
+                                    <th data-field="amount_budget" class="text-end">Presupuesto</th>
+                                    <th data-field="amount" class="text-end">Real</th>
+                                    <th data-field="amount_difference" class="text-end">Diferencia</th>
                                     <th data-field="percent" class="text-end">%</th>
                                 </tr>
                             </thead>
@@ -106,7 +108,9 @@ function buildCards(data) {
                         <tr>
                             <td>${row.account_code}</td>
                             <td>${row.account_name}</td>
+                            <td class="text-end">${formatCurrency(row.amount_budget)}</td>
                             <td class="text-end">${formatCurrency(row.amount)}</td>
+                            <td class="text-end">${formatCurrency(row.amount_difference)}</td>
                             <td class="text-end">${formatMoney(row.percent)}</td>
                         </tr>
                     `;

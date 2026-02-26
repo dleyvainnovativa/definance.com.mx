@@ -14,8 +14,24 @@ class IncomeStatementController extends Controller
         $month = $request->get('month', now()->month);
         // $month = 1;
         $year = $request->get('year', now()->year);
+        $incomeSt = self::getIncomeStatement($userId, $month, $year);
+
+        return response()->json(
+            [
+                'data'   => $incomeSt["data"],
+                'total'   => $incomeSt["total"],
+            ],
+        );
+    }
+    public static function getIncomeStatement($userId, $month, $year, $summary = null)
+    {
         // $year = 2026;
-        $results = TrialBalanceController::getTrialBalance($userId, $month, $year)->get();
+        $results = [];
+        if ($summary) {
+            $results = TrialBalanceController::getTrialBalanceSummary($userId, $month, $year)->get();
+        } else {
+            $results = TrialBalanceController::getTrialBalance($userId, $month, $year)->get();
+        }
 
         $prefixMap = [
             [
@@ -27,6 +43,7 @@ class IncomeStatementController extends Controller
                 'codes' => ['400.'],
                 'display' => 'operation',
                 'total' => 0,
+                'total_sum' => 0,
                 'percent' => 0,
             ],
             [
@@ -38,6 +55,7 @@ class IncomeStatementController extends Controller
                 'codes' => ['500.'],
                 'display' => 'operation',
                 'total' => 0,
+                'total_sum' => 0,
                 'percent' => 0,
             ],
             [
@@ -53,6 +71,7 @@ class IncomeStatementController extends Controller
                 ],
                 'display' => 'total',
                 'total' => 0,
+                'total_sum' => 0,
                 'percent' => 0,
             ],
             [
@@ -64,6 +83,7 @@ class IncomeStatementController extends Controller
                 'codes' => ['700.', '900.'],
                 'display' => 'operation',
                 'total' => 0,
+                'total_sum' => 0,
                 'percent' => 0,
             ],
             [
@@ -75,6 +95,7 @@ class IncomeStatementController extends Controller
                 'codes' => ['600.', '800.'],
                 'display' => 'operation',
                 'total' => 0,
+                'total_sum' => 0,
                 'percent' => 0,
             ],
             [
@@ -90,6 +111,7 @@ class IncomeStatementController extends Controller
                 ],
                 'display' => 'total',
                 'total' => 0,
+                'total_sum' => 0,
                 'percent' => 0,
             ],
         ];
@@ -119,6 +141,7 @@ class IncomeStatementController extends Controller
                         $amount = $debit;
                         $group['total'] += $debit;
                     }
+                    $group['total_sum'] += $entry->total;
                     $entry->amount = $amount;
                     $group['data'][] = $entry;
                     break 2;
@@ -134,16 +157,20 @@ class IncomeStatementController extends Controller
             if ($group['display'] !== 'total') {
                 continue;
             }
+            $total_sum = 0;
             $total = 0;
             foreach ($group['calculate']['plus'] as $key) {
                 $total += $groupIndex[$key]['total'] ?? 0;
+                $total_sum += $groupIndex[$key]['total_sum'] ?? 0;
             }
 
             foreach ($group['calculate']['minus'] as $key) {
                 $total -= $groupIndex[$key]['total'] ?? 0;
+                $total_sum -= $groupIndex[$key]['total_sum'] ?? 0;
             }
 
             $group['total'] = round($total, 2);
+            $group['total_sum'] = round($total_sum, 2);
         }
 
         foreach ($prefixMap as &$group) {
@@ -176,10 +203,13 @@ class IncomeStatementController extends Controller
                 }
             }
         }
-        return response()->json(
-            [
-                'data'   => $prefixMap,
-            ],
-        );
+
+        $groupIndex = collect($prefixMap)->keyBy('key');
+        $totalUtility = $groupIndex['other_total']['total'] ?? 0;
+
+        $returned["data"] = $prefixMap;
+        $returned["total"] = $totalUtility;
+        $returned["results"] = $results;
+        return $returned;
     }
 }

@@ -4,8 +4,12 @@ import laravel from 'laravel-vite-plugin';
 export default defineConfig({
     plugins: [
         laravel({
-            input: ['resources/scss/app.scss', 'resources/js/app.js', 'resources/css/theme.css', 
-                'resources/css/login.css','resources/js/login.js',
+            input: [
+                'resources/scss/app.scss', 
+                'resources/js/app.js', 
+                'resources/css/theme.css', 
+                'resources/css/login.css',
+                'resources/js/login.js',
                 'resources/js/accounts.js',
                 'resources/js/import.js',
                 'resources/js/entry.js',
@@ -16,6 +20,7 @@ export default defineConfig({
                 'resources/js/cash_flow.js',
                 'resources/js/balance_sheet.js',
                 'resources/js/budget.js',
+                'resources/js/average.js',
             ],
             refresh: true,
         }),
