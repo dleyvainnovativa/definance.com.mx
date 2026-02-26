@@ -21,6 +21,7 @@ export default defineConfig({
                 'resources/js/balance_sheet.js',
                 'resources/js/budget.js',
                 'resources/js/average.js',
+                'resources/js/budget_monthly.js',
             ],
             refresh: true,
         }),
