@@ -18,8 +18,8 @@ return new class extends Migration {
                 ->constrained('chart_of_accounts')
                 ->cascadeOnDelete();
 
-            $table->decimal('debit', 15, 2)->default(0);
-            $table->decimal('credit', 15, 2)->default(0);
+            $table->decimal('debit', 15, 2)->default(null);
+            $table->decimal('credit', 15, 2)->default(null);
 
             $table->timestamps();
         });
