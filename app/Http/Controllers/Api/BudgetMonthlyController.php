@@ -27,7 +27,7 @@ class BudgetMonthlyController extends Controller
     {
         $incomes = IncomeStatementController::getIncomeStatement($userId, $month, $year);
         $incomesData = &$incomes["data"];
-        $budget = BudgetController::getBudget($userId, $year)["results"];
+        $budget = BudgetController::getBudget($userId, ($year - 1))["results"];
         foreach ($incomesData as $key => &$group) {
             $total_budget = 0;
             if ($group["type"] != "total") {

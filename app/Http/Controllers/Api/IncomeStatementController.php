@@ -14,7 +14,11 @@ class IncomeStatementController extends Controller
         $month = $request->get('month', now()->month);
         // $month = 1;
         $year = $request->get('year', now()->year);
-        $incomeSt = self::getIncomeStatement($userId, $month, $year);
+        if ($month == "total") {
+            $incomeSt = self::getIncomeStatement($userId, 12, $year, true);
+        } else {
+            $incomeSt = self::getIncomeStatement($userId, $month, $year);
+        }
 
         return response()->json(
             [

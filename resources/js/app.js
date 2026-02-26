@@ -10,6 +10,7 @@ import "gridjs/dist/theme/mermaid.css";
 import 'bootstrap-table';
 import 'bootstrap-table/dist/extensions/filter-control/bootstrap-table-filter-control.min.js';
 import 'bootstrap-table/dist/extensions/custom-view/bootstrap-table-custom-view.min.js';
+import 'bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.js';
 
 
 window.Choices = Choices;

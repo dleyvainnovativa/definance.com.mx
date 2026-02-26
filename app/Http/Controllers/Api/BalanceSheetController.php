@@ -172,7 +172,7 @@ class BalanceSheetController extends Controller
                     }
                     $extraParentAccounts[0] = (object)[
                         'account_code' => $code,
-                        'account_name' => "DEFICIT O REMANENTE DE EJERCICIO ANTERIORES", // Use the real name here
+                        'account_name' => "DEFICIT O REMANENTE DEL EJERCICIO", // Use the real name here
                         'amount' => $amount,
                         'percent' => 0
                     ];

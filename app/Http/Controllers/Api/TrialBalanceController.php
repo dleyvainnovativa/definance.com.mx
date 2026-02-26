@@ -34,13 +34,114 @@ class TrialBalanceController extends Controller
         $totalOpening = 0;
         $totalSaldo = 0;
 
+        $baseTotals = [
+            "title"   => "",
+            "type"    => "calculate",
+            "opening" => 0,
+            "debit"   => 0,
+            "credit"  => 0,
+            "total"   => 0,
+        ];
+
+        $headers = [
+            "asset" => array_merge($baseTotals, [
+                "key"   => "asset",
+                "title" => "Activos",
+                'icon' => 'fa-coins',
+                "type" => "calculate"
+            ]),
+
+            "liability" => array_merge($baseTotals, [
+                "key"   => "liability",
+                "title" => "Pasivos",
+                'icon' => 'fa-file-invoice-dollar',
+                "type" => "calculate"
+            ]),
+
+            "equity" => array_merge($baseTotals, [
+                "key"   => "equity",
+                "title" => "Capital",
+                'icon' => 'fa-hand-holding-dollar',
+                "type" => "calculate"
+            ]),
+
+            "remain" => array_merge($baseTotals, [
+                "key"   => "remain",
+                "title" => "Remanente o Utilidad",
+                'icon' => 'fa-scale-balanced',
+                "type"  => "calculate",
+            ]),
+
+            "result" => array_merge($baseTotals, [
+                "key"   => "result",
+                "title" => "Resultado",
+                "type"  => "total",
+            ]),
+        ];
+
+        // $realOpening = 0;
+
         // Tu lógica de totales es perfecta y la reutilizamos aquí.
         foreach ($allEntries as $entry) {
             $totalDebit += $entry->debit;
             $totalCredit += $entry->credit;
             $totalOpening += $entry->opening;
             $totalSaldo += $entry->total;
+            if (
+                isset($headers[$entry->type]) &&
+                $headers[$entry->type]["type"] === "calculate"
+            ) {
+                $headers[$entry->type]["opening"] += $entry->opening;
+                $headers[$entry->type]["debit"]   += $entry->debit;
+                $headers[$entry->type]["credit"]  += $entry->credit;
+                $headers[$entry->type]["total"]   += $entry->total;
+            }
         }
+
+
+        $headers["remain"]["opening"] =
+            $headers["asset"]["opening"]
+            - $headers["liability"]["opening"]
+            - $headers["equity"]["opening"];
+
+        $headers["remain"]["credit"] =
+            $headers["asset"]["credit"]
+            - $headers["liability"]["credit"]
+            - $headers["equity"]["credit"];
+
+        $headers["remain"]["debit"] =
+            $headers["asset"]["debit"]
+            - $headers["liability"]["debit"]
+            - $headers["equity"]["debit"];
+
+        $headers["remain"]["total"] =
+            $headers["asset"]["total"]
+            - $headers["liability"]["total"]
+            - $headers["equity"]["total"];
+
+        $headers["result"]["opening"] =
+            $headers["asset"]["opening"]
+            - $headers["liability"]["opening"]
+            - $headers["equity"]["opening"]
+            - $headers["remain"]["opening"];
+
+        $headers["result"]["credit"] =
+            $headers["asset"]["credit"]
+            - $headers["liability"]["credit"]
+            - $headers["equity"]["credit"]
+            - $headers["remain"]["credit"];
+
+        $headers["result"]["debit"] =
+            $headers["asset"]["debit"]
+            - $headers["liability"]["debit"]
+            - $headers["equity"]["debit"]
+            - $headers["remain"]["debit"];
+
+        $headers["result"]["total"] =
+            $headers["asset"]["total"]
+            - $headers["liability"]["total"]
+            - $headers["equity"]["total"]
+            - $headers["remain"]["total"];
 
         $results = $finalQuery->paginate($limit);
 
@@ -62,15 +163,21 @@ class TrialBalanceController extends Controller
         return response()->json([
             'total' => $results->total(),
             'data'  => $rows,
+            'headers'  => array_values($headers),
+            'allEntries'  => $allEntries,
             'footer' => [
                 'entry_type_label' => "",
                 'account_code' => "",
                 'nature' => "",
                 'account_name' => "",
-                'opening'  => $totalOpening,
-                'debit'  => $totalDebit,
-                'credit' => $totalCredit,
-                'total' => $totalSaldo,
+                // 'opening'  => $totalOpening,
+                // 'debit'  => $totalDebit,
+                // 'credit' => $totalCredit,
+                // 'total' => $totalSaldo,
+                'opening'  => $headers["result"]["opening"],
+                'debit'  => $headers["result"]["debit"],
+                'credit' => $headers["result"]["credit"],
+                'total' => $headers["result"]["total"],
             ],
         ]);
     }
@@ -115,6 +222,7 @@ class TrialBalanceController extends Controller
         //     ->groupBy('a.id', 'a.code', 'a.name', 'a.user_id');
 
         $lastDay = Carbon::create($year, $month, 1)->endOfMonth();
+        $firstDay = Carbon::create($year, 1, 1);
 
         $openingJournalQuery = DB::table('accounts as a')
             ->select(
@@ -139,12 +247,15 @@ class TrialBalanceController extends Controller
                 ) AS rn')
 
             )
-            ->leftJoin('journal as j', function ($join) use ($lastDay) {
+            // ->leftJoin('journal as j', function ($join) use ($lastDay) {            
+            ->leftJoin('journal as j', function ($join) use ($firstDay, $lastDay) {
+
                 $join->on(function ($query) {
                     $query->on('a.id', '=', 'j.debit_account_id')->orOn('a.id', '=', 'j.credit_account_id');
                 })
                     ->whereIn('j.entry_type', ['opening_balance', 'opening_balance_credit'])
-                    ->whereDate('j.entry_date', '<=', $lastDay);
+                    // ->whereDate('j.entry_date', '<=', $lastDay);                    
+                    ->whereBetween('j.entry_date', [$firstDay, $lastDay]);
             });
 
         $openingQuery = DB::query()
@@ -243,6 +354,7 @@ class TrialBalanceController extends Controller
             ->groupBy('user_id', 'credit_account_id', 'credit_account_code', 'credit_account_name');
 
         $lastDay = Carbon::create($year, 1, 1)->endOfMonth();
+        $firstDay = Carbon::create($year, 1, 1);
 
         $openingJournalQuery = DB::table('accounts as a')
             ->select(
@@ -267,12 +379,13 @@ class TrialBalanceController extends Controller
                 ) AS rn')
 
             )
-            ->leftJoin('journal as j', function ($join) use ($lastDay) {
+            ->leftJoin('journal as j', function ($join) use ($firstDay, $lastDay) {
                 $join->on(function ($query) {
                     $query->on('a.id', '=', 'j.debit_account_id')->orOn('a.id', '=', 'j.credit_account_id');
                 })
                     ->whereIn('j.entry_type', ['opening_balance', 'opening_balance_credit'])
-                    ->whereDate('j.entry_date', '<=', $lastDay);
+                    // ->whereDate('j.entry_date', '<=', $lastDay);
+                    ->whereBetween('j.entry_date', [$firstDay, $lastDay]);
             });
 
         $openingQuery = DB::query()

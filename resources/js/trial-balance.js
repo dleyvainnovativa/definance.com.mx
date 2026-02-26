@@ -36,7 +36,45 @@ function ajaxRequest(params) {
 }
 window.ajaxRequest = ajaxRequest;
 
+
+function buildHeaderCards(data) {
+    console.log(data);
+    let html = '';
+    data.forEach(group => {
+        const colClass = 'col-12 col-md-12 col-lg-4 col-xl-3'
+        if (group.type === 'calculate') {
+            html += `
+
+<div class="${colClass}">
+        <div class="card card-dark border border-dark bg-dark">
+            <div class="card-body p-4 text-dark">
+                <div class="row g-2">
+                    <div class="col-auto me-auto">
+                        <h6 class="my-0">${group.title}</h6>
+                    </div>
+                    <div class="col-auto ms-auto">
+                        <h6 class="my-0"><i class="fa ${group.icon} text-primary" aria-hidden="true"></i></h6>
+                    </div>
+                    <div class="col-12">
+                        <h3 id="revenue-value" class="${formatTextClass(group.total)} my-0 fw-bold">${formatCurrency(group.total)}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+`;
+        }
+        document.getElementById('cards-header').innerHTML = html;
+    });
+    document.getElementById('cards-header').innerHTML = html;
+}
+
 function responseHandler(res) {
+    setTimeout(() => {
+        if (res.headers) {
+            buildHeaderCards(res.headers);
+        }
+    }, 0);
     return {
         total: res.total,
         rows: res.data,
@@ -53,6 +91,7 @@ window.footerLabel = footerLabel;
 function footerNullText() {
     return '';
 }
+
 window.footerNullText = footerNullText;
 
 function footerSum() {

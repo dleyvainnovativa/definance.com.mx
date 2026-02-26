@@ -877,3 +877,12 @@ button.gridjs-sort-neutral{
     mask-position: left
   }
 }
+/* Remove horizontal scroll from sticky header */
+.bootstrap-table .sticky-header-container {
+    overflow-x: hidden !important;
+}
+
+/* Make sure header width matches table */
+.bootstrap-table .sticky-header-container table {
+    width: 100% !important;
+}

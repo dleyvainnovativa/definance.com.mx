@@ -8,7 +8,7 @@
     </div>
 
 </div>
-<div class="row g-1 mt-1">
+<div class="row g-4 mt-1">
     <!-- <div class="col-auto">
         <button class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasFilter" aria-controls="offcanvasFilter">Filtros</button>
 
@@ -37,6 +37,12 @@
         </select>
     </div>
 
+    <div class="col-12 text-dark">
+        <div class="row g-4" id="cards-header">
+            @include("components.loading.cards_header")
+        </div>
+    </div>
+
     <div class="col-12">
         <div class="table-responsive">
             <table id="journal-table"
@@ -56,6 +62,8 @@
                 data-show-custom-view="true"
                 data-custom-view="customViewFormatter"
                 data-show-custom-view-button="true"
+                data-sticky-header="true"
+                data-sticky-header-offset-y="60"
                 data-ajax="ajaxRequest">
                 <thead>
                     <tr>
