@@ -133,6 +133,8 @@ class BalanceSheetController extends Controller
                 foreach ($group['codes'] as $code) {
                     if ($code == "300.1") {
                         break;
+                    } else if ($code == "300.2") {
+                        break;
                     } else {
 
                         if (str_starts_with($entry->account_code, $code)) {
@@ -173,6 +175,24 @@ class BalanceSheetController extends Controller
                     $extraParentAccounts[0] = (object)[
                         'account_code' => $code,
                         'account_name' => "DEFICIT O REMANENTE DEL EJERCICIO", // Use the real name here
+                        'amount' => $amount,
+                        'percent' => 0
+                    ];
+                    $group['total'] += $amount;
+                    $parentAccounts = array_merge($parentAccounts, $extraParentAccounts);
+
+                    break;
+                }
+            }
+            foreach ($group['codes'] as $code) {
+                if ($code == "300.2") {
+                    $amount = 0;
+                    for ($i = 1; $i <= $month; $i++) {
+                        $amount += IncomeStatementController::getIncomeStatement($userId, $i, $year - 1)["total"];
+                    }
+                    $extraParentAccounts[0] = (object)[
+                        'account_code' => $code,
+                        'account_name' => "DEFICIT O REMANENTE DEL EJERCICIO ANTERIORES", // Use the real name here
                         'amount' => $amount,
                         'percent' => 0
                     ];
