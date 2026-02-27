@@ -18,7 +18,6 @@
     <meta name="api-url" content="{{route('api')}}/">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-
     <!-- Light mode -->
     <meta name="apple-mobile-web-app-status-bar-style" content="white-translucent" media="(prefers-color-scheme: light)">
 
@@ -92,6 +91,9 @@
 
         window.tableOptions = tableOptions;
     </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/masonry-layout@4.2.2/dist/masonry.pkgd.min.js" integrity="sha384-GNFwBvfVxBkLMJpYMOABq3c+d3KnQxudP/mGPkzpZSTYykLBNsZEnG2D9G/X/+7D" crossorigin="anonymous" async></script>
+
 </body>
 
 </html>

@@ -1,6 +1,7 @@
 @extends('main')
 
 @section('content')
+
 <input id="data_url" type="hidden" value='{{route("api.budget-monthly")}}'>
 <div class="d-flex justify-content-between align-items-center mb-2">
     <div>
@@ -40,7 +41,7 @@
         </div>
     </div>
     <div class="col-12 text-dark">
-        <div class="row g-4" id="cards-container">
+        <div class="row g-4" data-masonry='{"percentPosition": true }' id="cards-container">
             @include("components.loading.cards_body")
         </div>
     </div>

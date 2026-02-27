@@ -32,8 +32,12 @@ initRequest();
 function buildHeaderCards(data) {
     let html = '';
     data.forEach(group => {
-        const colClass = 'col-12 col-md-12 col-lg-6 col-xl-3'
-        if (group.display === 'operation') {
+        let colClass = 'col-12 col-md-12 col-lg-6 col-xl-6 col-xxl-3';
+        if (group.display === 'operation' ) {
+            colClass = 'col-12 col-md-12 col-lg-6 col-xl-6 col-xxl-3';
+        }else if(group.display === 'total'){
+            colClass = 'col-12 col-md-12 col-lg-6 col-xl-6 col-xxl-6';
+        }
             html += `
 
 <div class="${colClass}">
@@ -54,7 +58,6 @@ function buildHeaderCards(data) {
         </div>
     </div>
 `;
-        }
 
         document.getElementById('cards-header').innerHTML = html;
     });
@@ -65,23 +68,23 @@ function buildCards(data) {
     let html = '';
     data.forEach(group => {
         const colClass = group.display === 'operation' ?
-            'col-12 col-md-12 col-lg-12 col-xl-6' :
+            'col-12 col-md-12 col-lg-6 col-xl-12 col-xxl-6' :
             'col-12';
         if (group.display === 'operation') {
             html += `
                 <div class="${colClass} ">
-                    <div class="card card-dark border border-dark shadow-sm h-100 text-dark">
-                        <div class="card-body p-4">
+                    <div class="">
+                        <div class="">
                         
-                            
-                        <div class="mb-3 fs-5 fw-bold"><i class="me-3 text-primary fs-4 fa-solid ${group.icon}" aria-hidden="true">
+                        
+                        <div class="fs-5 fw-bold"><i class="me-3 text-primary fs-4 fa-solid ${group.icon}" aria-hidden="true">
                         </i>${group.title}</div>
             `;
 
             if (group.data.length > 0) {
                 html += `
                     <div class="table-responsive">
-                        <table class="table table-bordered table-sm js-bootstrap-table" 
+                        <table class="table table-sm js-bootstrap-table" 
                         data-toggle="table"
                         data-search="true"
                         data-buttons-align="left"
@@ -92,12 +95,12 @@ function buildCards(data) {
                         >
                             <thead class="">
                                 <tr class="">
-                                    <th data-field="account_code" class="">Code</th>
-                                    <th data-field="account_name" class="">Account</th>
-                                    <th data-field="amount_budget" class="text-end">Presupuesto</th>
-                                    <th data-field="amount" class="text-end">Real</th>
-                                    <th data-field="amount_difference" class="text-end">Diferencia</th>
-                                    <th data-field="percent" class="text-end">%</th>
+                                    <th data-field="account_code" class="p-3 ">Code</th>
+                                    <th data-field="account_name" class="p-3 ">Account</th>
+                                    <th data-field="amount_budget" class="p-3 text-end">Presupuesto</th>
+                                    <th data-field="amount" class="p-3 text-end">Real</th>
+                                    <th data-field="amount_difference" class="p-3 text-end">Diferencia</th>
+                                    <th data-field="percent" class="p-3 text-end">%</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -126,67 +129,47 @@ function buildCards(data) {
             }
             // Total footer
             html += `
-                            <div class="mt-3 text-end">
-                                <strong>Total:</strong>
-                                <span class="ms-2">${formatCurrency(group.total)}</span>
-                            </div>
-                            <div class="mt-1 text-end">
-                                <strong>Porcentaje:</strong>
-                                <span class="ms-2">${formatMoney(group.percent)}%</span>
-                            </div>
+                            
                         </div>
                     </div>
                 </div>
-            `;
-        } else if (group.display === 'total') {
-            html += `
-
-        <div class="${colClass}">
-        <div class="text-bg-white border border-dark card card-dark h-100 position-relative text-dark">
-            <div class="card-body p-4">
-                <div class="d-flex align-items-center justify-content-between">
-
-                    <!-- Leading icon -->
-                    <div class="me-3 text-primary fs-4">
-                        <i class="fa-solid ${group.icon}" aria-hidden="true"></i>
-                    </div>
-
-                    <!-- Title + subtitle -->
-                    <div class="flex-grow-1">
-                        <div class="fw-semibold fs-5">${group.title}</div>
-                    </div>
-
-                    <!-- Trailing amount -->
-                    <div class="ms-3 fw-semibold">
-                        <div class="col-12 text-dark text-end fs-5">
-                            ${formatCurrency(group.total)}
-                        </div>
-                        <div class="col-12 text-muted text-end fs-5">
-                            ${group.percent}%
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
             `;
         }
 
         document.getElementById('cards-container').innerHTML = html;
+        
 
         // Initialize bootstrap-table on newly created tables
 
 
     });
     document.getElementById('cards-container').innerHTML = html;
+    
     document.querySelectorAll('.js-bootstrap-table').forEach(table => {
     const $table = $(table);
+tableOptions.onCustomViewPostBody = function (data) {
+    console.log("post");
+    const container = document.querySelector('#cards-container');
 
+if (container) {
+    new Masonry(container, {
+        percentPosition: true
+    });
+}
+};
     $table.bootstrapTable(tableOptions);
 
     if (isMobile()) {
         $table.bootstrapTable('toggleCustomView', true);
     }
+    
+    const container = document.querySelector('#cards-container');
+
+if (container) {
+    new Masonry(container, {
+        percentPosition: true
+    });
+}
 });
 }
 
@@ -199,10 +182,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
 function customViewFormatter(data) {
     const template = document.getElementById('tableTemplate').innerHTML;
-    let html = '<div class="list-group">';
+    let html = '<div class="list-group card-dark">';
 
     data.forEach(row => {
-        console.log(row);
         let card = template
             .replace('%title%', row.account_name)
             .replace('%code%', row.account_code)
@@ -217,6 +199,7 @@ function customViewFormatter(data) {
     });
 
     html += '</div>';
+    
     return html;
 }
 document.getElementById("refresh").addEventListener("click", initRequest);
