@@ -22,6 +22,9 @@ return new class extends Migration
     code,
     name,
     type,
+    is_editable,
+    is_deletable,
+    allows_children,
     CASE
         WHEN type IN ('asset', 'expense') THEN 'debit'
         WHEN type IN ('liability', 'equity', 'income') THEN 'credit'

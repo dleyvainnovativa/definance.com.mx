@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Api\AccountController;
 use Illuminate\Http\Request;
 use App\Models\User;
 // use Kreait\Firebase\Auth as FirebaseAuth;
@@ -54,6 +55,7 @@ class AuthController extends Controller
                     'name' => $firebaseUser->displayName ?? 'Usuario',
                     'email' => $firebaseUser->email,
                 ]);
+                AccountController::setDefaults($user->id);
             } else {
                 // Existing user → ensure firebase_uid is set
                 if (!$user->firebase_uid) {

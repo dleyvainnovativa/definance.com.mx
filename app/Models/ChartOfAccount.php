@@ -19,6 +19,9 @@ class ChartOfAccount extends Model
         'category',
         'parent_id',
         'opening_balance',
+        'is_editable',
+        'is_deletable',
+        'allows_children',
         'is_active',
     ];
 

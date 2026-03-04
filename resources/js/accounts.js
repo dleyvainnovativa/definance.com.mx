@@ -49,7 +49,7 @@ function initRequest() {
     if (!token) {
         return;
     }
-    fetch(`${api_url}accounts/all`, {
+    fetch(`${api_url}accounts/all?type=create`, {
             headers: {
                 'Accept': 'application/json',
                 'Authorization': `Bearer ${token}`

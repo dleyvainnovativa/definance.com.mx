@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use App\Models\ChartOfAccount;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
-
+use Illuminate\Support\Facades\Storage;
 
 class AccountController extends Controller
 {
@@ -56,7 +56,12 @@ class AccountController extends Controller
         $query = DB::table('accounts')
             ->where('user_id', $userId);
 
-        $entries = $query->orderBy('code')->get();
+        $type = $request->get('type', null);
+        if ($type == "create") {
+            $entries = $query->orderBy('code')->where("allows_children", true)->get();
+        } else {
+            $entries = $query->orderBy('code')->get();
+        }
         $rows = $entries->map(function ($entry) {
             return [
                 'id'                  => $entry->id,
@@ -101,5 +106,57 @@ class AccountController extends Controller
             'success' => true,
             'account' => $account
         ], 201);
+    }
+
+    public static function setDefaults($userId)
+    {
+        // 1️⃣ Load JSON from storage/private
+        $jsonPath = 'accounts/default.json';
+
+        if (!Storage::disk('local')->exists($jsonPath)) {
+            throw new \Exception("JSON file not found at: storage/app/{$jsonPath}");
+        }
+
+        $accounts = json_decode(Storage::disk('local')->get($jsonPath), true);
+        $now = Carbon::now();
+
+        DB::transaction(function () use ($accounts, $userId, $now) {
+
+            $codeIdMap = [];
+
+            // 2️⃣ Insert all accounts WITHOUT parent_id first
+            foreach ($accounts as $account) {
+
+                $id = DB::table('chart_of_accounts')->insertGetId([
+                    'user_id' => $userId,
+                    'parent_id' => null, // set later
+                    'code' => $account['code'],
+                    'name' => $account['name'],
+                    'type' => $account['type'],
+                    'is_editable' => $account['is_editable'],
+                    'is_deletable' => $account['is_deletable'],
+                    'allows_children' => $account['allows_children'],
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+
+                $codeIdMap[$account['code']] = $id;
+            }
+
+            foreach ($accounts as $account) {
+
+                if (!empty($account['parent_code'])) {
+
+                    $childId = $codeIdMap[$account['code']];
+                    $parentId = $codeIdMap[$account['parent_code']] ?? null;
+
+                    if ($parentId) {
+                        DB::table('chart_of_accounts')
+                            ->where('id', $childId)
+                            ->update(['parent_id' => $parentId]);
+                    }
+                }
+            }
+        });
     }
 }

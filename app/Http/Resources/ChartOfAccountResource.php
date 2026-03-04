@@ -23,6 +23,9 @@ class ChartOfAccountResource extends JsonResource
             'category' => $this->category,
             'opening_balance' => $this->opening_balance,
             'is_active' => $this->is_active,
+            'is_editable' => $this->is_editable,
+            'is_deletable' => $this->is_deletable,
+            'allows_children' => $this->allows_children,
             'parent_id' => $this->parent_id,
         ];
     }
