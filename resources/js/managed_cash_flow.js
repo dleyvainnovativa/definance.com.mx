@@ -248,11 +248,16 @@ function buildCards(data, cash_accounts, saved_data) {
                     projectionCell = `<td><input type="number" class="form-control manual-projection" value="${valProj}"></td>`;
                     percentTotalCell = `<td class="text-end">${formatMoney(valPercProj)}</td>`;
                     percentCell = ` <td class="text-end">${formatMoney(valPerc)}</td>`;
-
+                    
                 } else if (group.projection_manual) {
                     // Rule: "set the value of projection on the manual-projection input"
                     projectionCell = `<td><input type="number" class="form-control manual-projection" value="${valProj}"></td>`;
                 } else {
+                    projectionCell = `<td class="text-end">${formatCurrency(valProj)}</td>`;
+                }
+                if (group.projection_manual == false) {
+                    // console.log(group);
+                    valProj = savedRow ? savedRow.projection : (row.projection_entry || 0);
                     projectionCell = `<td class="text-end">${formatCurrency(valProj)}</td>`;
                 }
 

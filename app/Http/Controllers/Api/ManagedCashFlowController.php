@@ -402,7 +402,10 @@ class ManagedCashFlowController extends Controller
                     if ($group['display'] !== 'operation') {
                         continue;
                     }
-                    $entry->projection_entry = $entry->{$group['total_attribute']};
+                    $entry->projection_entry = 0;
+                    if ($group["projection_manual"] == false) {
+                        $entry->projection_entry = $entry->{$group['total_attribute']};
+                    }
                     foreach ($group['codes'] as $code) {
                         if (!str_starts_with($entry->account_code, $code)) {
                             continue;
@@ -411,7 +414,11 @@ class ManagedCashFlowController extends Controller
                         $total  = $entry->total  ?? 0;
                         $debit  = $entry->debit  ?? 0;
                         $credit = $entry->credit ?? 0;
-                        $projectionAmount = $entry->{$group['total_attribute']};
+                        $projectionAmount = 0;
+                        if ($group["projection_manual"] == false) {
+                            $projectionAmount = $entry->{$group['total_attribute']};
+                        }
+                        // $projectionAmount = $entry->{$group['total_attribute']};
                         foreach ($saveCurrentFile as $key => $save) {
                             if ($save["id"] == $entry->account_id) {
                                 $entry->projection_entry = $save["projection"];
