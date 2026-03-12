@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\BalanceSheetController;
 use App\Http\Controllers\Api\BudgetController;
 use App\Http\Controllers\Api\BudgetMonthlyController;
 use App\Http\Controllers\Api\CashFlowController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\EntryController;
 use App\Http\Controllers\Api\IncomeStatementController;
 use App\Http\Controllers\Api\JournalEntryController;
@@ -19,6 +20,7 @@ Route::get('/',)->name('api');
 
 
 Route::middleware('firebase.jwt')->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('api.dashboard');
     Route::get('/accounts', [AccountController::class, 'index'])->name('api.accounts');
     Route::get('/accounts/all', [AccountController::class, 'all'])->name('api.accounts.all');
     Route::get('/journal', [JournalEntryController::class, 'index'])->name('api.journal');

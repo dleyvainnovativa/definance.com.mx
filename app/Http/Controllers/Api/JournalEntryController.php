@@ -46,7 +46,7 @@ class JournalEntryController extends Controller
         ]);
     }
 
-    public static function getJournal($userId, $month, $year, $search = null, $filters = [], $limit = 10, $page = 1)
+    public static function getJournal($userId, $month, $year, $search = null, $filters = [], $limit = 10, $page = 1, $typeNotIn = [])
     {
         $query = DB::table('journal')
             ->where('user_id', $userId);
@@ -79,6 +79,11 @@ class JournalEntryController extends Controller
                     // Si ya había un filtro de débito, une este con OR.
                     $q->orWhereIn('credit_account_name', $creditAccounts);
                 }
+            });
+        }
+        if (!empty($typeNotIn)) {
+            $query->where(function ($q) use ($typeNotIn) {
+                $q->whereNotIn('entry_type', $typeNotIn);
             });
         }
 
