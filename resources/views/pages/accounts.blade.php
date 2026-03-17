@@ -90,5 +90,6 @@
 </template>
 @vite(["resources/js/accounts.js"])
 @include("modals.add_account")
+@include("modals.edit_account")
 
 @endsection

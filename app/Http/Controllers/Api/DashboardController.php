@@ -29,7 +29,7 @@ class DashboardController extends Controller
 
         $accounts = array_merge($debit_accounts, $credit_accounts);
 
-        $journal = JournalEntryController::getJournal($userId, $month, $year, null, [], 10, 1, ["opening_balance_credit", "opening_balance"]);
+        $journal = JournalEntryController::getJournal($userId, $month, $year, null, [], 10, 1, ["opening_balance_credit", "opening_balance"], "desc");
         $balance = BalanceSheetController::getBalanceSheet($userId, $month, $year)["data"];
         $incomeM = IncomeStatementController::getIncomeStatement($userId, $month, $year)["data"];
         $incomeM = array_slice($incomeM, 0, 3);

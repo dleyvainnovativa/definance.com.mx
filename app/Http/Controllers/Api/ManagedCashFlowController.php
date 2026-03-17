@@ -540,7 +540,11 @@ class ManagedCashFlowController extends Controller
 
                 if ($typeSaved === 'credit') {
                     $save["percent"] = ($save["total"] / $totalExpenses) * 100;
-                    $save["percent_projection"] = ($save["projection"] / $totalExpensesProjections) * 100;
+                    if ($save["projection"]  != 0 || $totalExpensesProjections != 0) {
+                        $save["percent_projection"] = ($save["projection"] / $totalExpensesProjections) * 100;
+                    } else {
+                        $save["percent_projection"] = 0;
+                    }
                 }
 
                 if ($typeSaved === 'debit') {

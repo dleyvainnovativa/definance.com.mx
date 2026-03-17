@@ -128,6 +128,7 @@ function ajaxRequest(params) {
     let filters = {
         "debit_accounts": (selectedDebitAccounts),
         "credit_accounts": (selectedCreditAccounts),
+        "types": (selectedTypes),
     };
 
     url.searchParams.set(
@@ -228,6 +229,7 @@ document.addEventListener('DOMContentLoaded', function () {
 // FILTER
 let selectedDebitAccounts = [];
 let selectedCreditAccounts = [];
+let selectedTypes = ['income', 'expense', 'transfer', 'asset_acquisition'];
 
 function loadAccountFilters() {
     fetch(`${api_url}journal/filters`, {
@@ -242,18 +244,25 @@ function loadAccountFilters() {
             renderCheckboxList('#filter-credit-accounts', data.credit_accounts, 'credit');
         });
 }
-
 function renderCheckboxList(container, items, key) {
     const el = document.querySelector(container);
-    el.innerHTML = items.map(v => `
+
+    el.innerHTML = items.map((v, i) => {
+        const id = `${key}_${i}`;
+
+        return `
         <div class="form-check">
             <input class="form-check-input"
                    type="checkbox"
+                   id="${id}"
                    value="${v}"
                    data-filter="${key}">
-            <label class="form-check-label">${v}</label>
+            <label class="form-check-label" for="${id}">
+                ${v}
+            </label>
         </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 document.addEventListener('DOMContentLoaded', loadAccountFilters);
@@ -287,6 +296,7 @@ document.getElementById('filters-reset').onclick = () => {
 document.getElementById('filters-apply').onclick = () => {
     selectedDebitAccounts = getChecked('debit');
     selectedCreditAccounts = getChecked('credit');
+    selectedTypes = getChecked('entry_type');
 
     $('#journal-table').bootstrapTable('refresh', {
         pageNumber: 1

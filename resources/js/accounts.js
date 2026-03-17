@@ -1,3 +1,6 @@
+let editModalEl = document.getElementById("accountEditModal");
+let editModal = bootstrap.Modal.getOrCreateInstance(editModalEl);
+
 (() => {
     'use strict'
     const forms = document.querySelectorAll('#account-form.needs-validation')
@@ -15,6 +18,30 @@
             } else {
 
                 await addAccount(form);
+                await setButtonLoading(submitButton, false);
+
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+})();
+(() => {
+    'use strict'
+    const forms = document.querySelectorAll('#account-edit-form.needs-validation')
+    Array.from(forms).forEach(form => {
+        form.addEventListener('submit', async event => {
+            const submitButton = form.querySelector('button[type="submit"]');
+
+            setButtonLoading(submitButton, true);
+            event.preventDefault(); // always prevent native submit
+
+            if (!form.checkValidity()) {
+                event.stopPropagation();
+                await setButtonLoading(submitButton, false);
+
+            } else {
+
+                await editAccountForm(form);
                 await setButtonLoading(submitButton, false);
 
             }
@@ -89,25 +116,25 @@ function actionsFormatter(value, row) {
     <i class="fa-solid fa-pen"></i>
 </button>
     `;
-    if(row.is_editable){
-edit = `
+    if (row.is_editable) {
+        edit = `
 <button
     class="btn btn-outline-primary"
-    onclick="editAccount(${value})"
+    onclick="editAccount(${value}, '${row.name}')"
     title="Editar cuenta">
     <i class="fa-solid fa-pen"></i>
 </button>
 `;
     }
-    if(row.is_deletable){
-     remove = `
+    if (row.is_deletable) {
+        remove = `
      <button
         class="btn btn-outline-danger"
-        onclick="removeAccount(${value})"
+        onclick="removeAccount(${value},'${row.name}')"
         title="Eliminar cuenta">
         <i class="fa-solid fa-trash"></i>
     </button>
-     `;   
+     `;
     }
     return `<div class="btn-group btn-group-sm">
                         ${edit}
@@ -196,18 +223,18 @@ parentSelect.addEventListener("change", function () {
     document.getElementById("account_type").value = `${type}`;
     document.getElementById("account_parent_id").value = parent_id;
 
-   const children = accounts_list.filter(acc => {
-    if (!acc.code) return false;
+    const children = accounts_list.filter(acc => {
+        if (!acc.code) return false;
 
-    const parts = acc.code.split(".");
-    const parentParts = parentCode.split(".");
+        const parts = acc.code.split(".");
+        const parentParts = parentCode.split(".");
 
-    // Must start with parent
-    if (!acc.code.startsWith(parentCode + ".")) return false;
+        // Must start with parent
+        if (!acc.code.startsWith(parentCode + ".")) return false;
 
-    // Must be exactly one level deeper
-    return parts.length === parentParts.length + 1;
-});
+        // Must be exactly one level deeper
+        return parts.length === parentParts.length + 1;
+    });
     console.log(children);
 
     //  Get next consecutive
@@ -276,6 +303,48 @@ async function addAccount(form) {
         return error;
     }
 }
+async function editAccountForm(form) {
+    const token = localStorage.getItem('finance_auth_token');
+    if (!token) return;
+
+    const payload = {
+        id: form.account_id.value,
+        name: form.account_name.value,
+    };
+
+    try {
+        const response = await fetch(`${api_url}accounts`, {
+            method: 'PUT',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            handleApiError(response.status, data);
+            return;
+        }
+        $('#journal-table').bootstrapTable('refresh');
+        initRequest();
+        editModal.hide();
+        form.reset();
+        document.getElementById("badge_root").textContent = "";
+        document.getElementById("code_prefix").textContent = "0";
+        const data = await response.json();
+        showAlert("Perfil actualizado", "Se han actualizado correctamente los datos", "", "success")
+
+        return data;
+
+    } catch (error) {
+        console.log(error);
+        showAlert("Ha ocurrido un error", "No se han actualizado correctamente los datos, intente de nuevo", "", "danger")
+
+        return error;
+    }
+}
 
 window.customViewFormatter = data => {
     const template = $('#tableTemplate').html()
@@ -296,19 +365,77 @@ window.customViewFormatter = data => {
         let edit = ``;
         let remove = ``;
 
-        edit = `onclick="editAccount(${row.id})"`;
-        remove = `onclick="removeAccount(${row.id})"`;
+        edit = `onclick="editAccount(${row.id}, '${row.name}')"`;
+        remove = `onclick="removeAccount(${row.id},'${row.name}')"`;
         view += template
             .replace('%id%', row.id)
             .replace('%icon%', getEntryIcon(row.type))
             .replace('%account_name%', row.name)
             .replace('%edit%', edit)
             .replace('%remove%', remove)
-            .replace('%is_editable%', row.is_editable ? "":"disabled")
-            .replace('%is_deletable%', row.is_deletable ? "":"disabled")
+            .replace('%is_editable%', row.is_editable ? "" : "disabled")
+            .replace('%is_deletable%', row.is_deletable ? "" : "disabled")
             .replace('%account_code%', row.code)
             .replace('%type_label%', row.type_label)
             .replace('%nature_label%', row.nature_label)
     });
     return `<div class="row g-4">${view}</div>`;
 }
+
+function editAccount(id, name) {
+    console.log(id);
+    console.log(name);
+    document.getElementById("account_edit_id").value = id;
+    document.getElementById("account_edit_name").value = name;
+    editModal.show();
+}
+async function removeAccount(id, name) {
+    let modal = await confirmModal({
+        title: `¿Estás seguro de borrar esta cuenta (${name})?`,
+        text: 'Estás a punto de borrar esta cuenta para siempre',
+        mode: 'warning',
+        confirmText: 'Borrar cuenta'
+    });
+    if (modal) {
+        const token = localStorage.getItem('finance_auth_token');
+        if (!token) return;
+
+        const payload = {
+            id: `${id}`,
+        };
+
+        try {
+    const response = await fetch(`${api_url}accounts`, {
+        method: 'DELETE',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+        if (data.success) {
+            initRequest();
+            $('#journal-table').bootstrapTable('refresh');
+            showAlert("Cuenta borrada", "Se ha borrado la cuenta", "", "success");
+        } else {
+            showAlert("Ha ocurrido un error", data.message, "", "danger");
+        }
+    } else {
+        showAlert("Ha ocurrido un error", data.message ?? "Error en la petición", "", "danger");
+    }
+
+} catch (error) {
+    console.log(error);
+    showAlert("Ha ocurrido un error", "No se ha borrado la cuenta, intente de nuevo", "", "danger");
+    return error;
+}
+    }
+
+}
+window.editAccount = editAccount;
+window.removeAccount = removeAccount;

@@ -344,6 +344,26 @@ function formatDate(dateString) {
     return `${year}-${part2.padStart(2,'0')}-${part1.padStart(2,'0')}`;
 }
 
+function moveToID(id, bottom = false){
+    const element = document.getElementById(id);
+
+let offset = 200;
+let position = element.getBoundingClientRect().top + window.pageYOffset - offset;
+if(bottom){
+    offset = 400;
+    position = element.getBoundingClientRect().bottom + window.pageYOffset - offset;
+}else{
+    position = element.getBoundingClientRect().top + window.pageYOffset - offset;
+}
+
+window.scrollTo({
+    top: position,
+    behavior: "smooth"
+});
+
+}
+
+window.moveToID=moveToID;
 window.confirmModal=confirmModal;
 window.formatDate=formatDate;
 window.formatMoney=formatMoney;

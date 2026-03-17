@@ -46,7 +46,7 @@ class JournalEntryController extends Controller
         ]);
     }
 
-    public static function getJournal($userId, $month, $year, $search = null, $filters = [], $limit = 10, $page = 1, $typeNotIn = [])
+    public static function getJournal($userId, $month, $year, $search = null, $filters = [], $limit = 10, $page = 1, $typeNotIn = [], $order = "asc")
     {
         $query = DB::table('journal')
             ->where('user_id', $userId);
@@ -68,6 +68,7 @@ class JournalEntryController extends Controller
 
         $debitAccounts = $filters['debit_accounts'] ?? null;
         $creditAccounts = $filters['credit_accounts'] ?? null;
+        $typesFilter = $filters['types'] ?? null;
 
         // La lógica OR para los filtros de cuenta ahora es mucho más legible.
         if ($debitAccounts || $creditAccounts) {
@@ -81,6 +82,14 @@ class JournalEntryController extends Controller
                 }
             });
         }
+        if ($typesFilter) {
+            $query->where(function ($q) use ($typesFilter) {
+                if ($typesFilter) {
+                    $q->whereIn('entry_type', $typesFilter);
+                }
+            });
+        }
+
         if (!empty($typeNotIn)) {
             $query->where(function ($q) use ($typeNotIn) {
                 $q->whereNotIn('entry_type', $typeNotIn);
@@ -102,7 +111,7 @@ class JournalEntryController extends Controller
         }
 
         // --- PASO 4: Paginar y Transformar Filas (misma lógica, datos más simples) ---
-        $entries = $query->orderBy('entry_date')->orderBy('entry_id')->paginate($limit, ['*'], 'page', $page);
+        $entries = $query->orderBy('entry_date', $order)->orderBy('entry_id')->paginate($limit, ['*'], 'page', $page);
         // dd($entries);
 
         $rows = $entries->getCollection()->map(function ($entry) use ($debitAccounts, $creditAccounts) {
@@ -236,7 +245,7 @@ class JournalEntryController extends Controller
     {
         $request->validate([
             'entry_date' => ['required', 'date'],
-            'entry_type' => ['required', 'in:income,expense,opening_balance,opening_balance_credit,transfer'],
+            'entry_type' => ['required', 'in:income,expense,opening_balance,asset_acquisition,opening_balance_credit,transfer'],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'debit_account_id' => ['required', 'exists:chart_of_accounts,id'],
             'credit_account_id' => ['required', 'exists:chart_of_accounts,id'],
@@ -259,9 +268,16 @@ class JournalEntryController extends Controller
         $year = self::getYear($entry_date);
 
 
+        // if ($entry_type == "opening_balance" || $entry_type == "opening_balance_credit") {
+        //     $accountCredit = DB::table('accounts')->where("user_id", $userId)->where("code", "300.2")->get()->first();
+        //     $credit_account_id = $accountCredit->id;
+        // }
+        // dd($userId, $entry_date, $entry_type, $description, $reference, $amount, $debit_account_id, $credit_account_id);
+        // dd("hola");
+
         self::create($userId, $entry_date, $entry_type, $description, $reference, $amount, $debit_account_id, $credit_account_id);
         $results = self::setOpening($request->debit_account_id, $request->credit_account_id, $month, $year, $userId);
-        self::setOpening($request->credit_account_id, $request->debit_account_id, $month, $year, $userId);
+        self::setOpening($credit_account_id, $request->debit_account_id, $month, $year, $userId);
         self::setOpeningDeficit($year, $userId);
 
         $results = [];
@@ -323,7 +339,21 @@ class JournalEntryController extends Controller
         $debit_account_id = $results->debit_account_id;
         $credit_account_id = $results->credit_account_id;
 
+        // dd($results);
         self::remove($entry_id, $userId);
+        // if ($results->entry_type == "opening_balance" || $results->entry_type == "opening_balance_credit") {
+        //     // $results = self::setOpening($debit_account_id, $credit_account_id, $month, $year, $userId);
+        //     if ($credit_account_id) {
+        //         self::setOpening($credit_account_id, $debit_account_id, $month, $year, $userId);
+        //     }
+        // } else {
+        //     self::setOpening($debit_account_id, $credit_account_id, $month, $year, $userId);
+        //     if ($credit_account_id) {
+        //         self::setOpening($credit_account_id, $debit_account_id, $month, $year, $userId);
+        //     }
+        // }
+        // self::setOpening($credit_account_id, $debit_account_id, $month, $year, $userId);
+        // self::setOpening($debit_account_id, $credit_account_id, $month, $year, $userId);
         $results = self::setOpening($debit_account_id, $credit_account_id, $month, $year, $userId);
         self::setOpening($credit_account_id, $debit_account_id, $month, $year, $userId);
         self::setOpeningDeficit($year, $userId);
@@ -530,7 +560,7 @@ class JournalEntryController extends Controller
     {
         $trial = TrialBalanceController::getTrialBalance($userId, $month, $year);
         $results = $trial->where('op.account_id', $account_id)->get()->first();
-        $total = $results->total;
+        $total = $results->total ?? 0;
         $nature = $results->nature;
         $validation = self::validateOpening($userId, $account_id, $credit_account_id, $month, $year, $nature);
         // dd($validation, $results, $total);
@@ -676,6 +706,8 @@ class JournalEntryController extends Controller
 
         $debitAccounts = $filters['debit_accounts'] ?? null;
         $creditAccounts = $filters['credit_accounts'] ?? null;
+        $typesFilter = $filters['types'] ?? null;
+
 
         // La lógica OR para los filtros de cuenta ahora es mucho más legible.
         if ($debitAccounts || $creditAccounts) {
@@ -686,6 +718,14 @@ class JournalEntryController extends Controller
                 if ($creditAccounts) {
                     // Si ya había un filtro de débito, une este con OR.
                     $q->orWhereIn('credit_account_name', $creditAccounts);
+                }
+            });
+        }
+
+        if ($typesFilter) {
+            $query->where(function ($q) use ($typesFilter) {
+                if ($typesFilter) {
+                    $q->whereIn('entry_type', $typesFilter);
                 }
             });
         }

@@ -20,6 +20,7 @@ class TrialBalanceController extends Controller
         $month = $request->get('month', now()->month);
         $year = $request->get('year', now()->year);
         $search = $request->get('search');
+        $details = $request->boolean('details');
         $limit = (int) $request->get('limit', 10);
 
         // if ($month == "total") {
@@ -40,6 +41,13 @@ class TrialBalanceController extends Controller
                 $q->where('op.account_name', 'like', "%{$search}%")
                     ->orWhere('op.account_code', 'like', "%{$search}%");
             });
+            if (!$details) {
+                $finalQuery->having(function ($q) {
+                    $q->having('debit', '!=', 0)
+                        ->orHaving('credit', '!=', 0)
+                        ->orHaving('opening', '!=', 0);
+                });
+            }
         }
         // }
 

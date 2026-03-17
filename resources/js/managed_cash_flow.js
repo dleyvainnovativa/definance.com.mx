@@ -1,7 +1,8 @@
 // --- 1. Global State Management ---
 let globalState = {
     data: [],
-    cash_accounts: []
+    cash_accounts: [],
+    saved: []
 };
 let masonryInstance = null;
 
@@ -10,17 +11,19 @@ function initRequest() {
     const token = localStorage.getItem('finance_auth_token');
     let data_url = document.getElementById("data_url").value;
     const url = new URL(data_url);
+
     const month = document.getElementById('month-filter')?.value;
     const year = document.getElementById('year-filter')?.value;
     if (month) url.searchParams.set('month', month);
     if (year) url.searchParams.set('year', year);
+
     fetch(url, {
             headers: { 'Accept': 'application/json', 'Authorization': `Bearer ${token}` }
         })
         .then(res => res.json())
         .then(data => {
             globalState.data = data.data;
-            globalState.saved = data.save;
+            globalState.saved = data.save; // Make sure this matches your JSON payload exactly
             globalState.cash_accounts = data.cash_accounts;
             buildHeaderCards(globalState.data);
             buildCards(globalState.data, globalState.cash_accounts, globalState.saved);
@@ -29,6 +32,7 @@ function initRequest() {
             console.error("Failed to fetch initial data:", error);
         });
 }
+
 initRequest();
 
 // --- Header Cards Builder ---
@@ -54,7 +58,6 @@ function buildHeaderCards(data) {
                                     ${formatCurrency(group.total_sum)}
                                 </h3>
                             </div>
-
                             <div class="col-auto ms-auto d-flex flex-column">
                                 <small class="text-muted">Total proyectado</small>
                                 <h3 class="${formatTextClass(group.total_projection)} my-0 fw-bold">
@@ -69,59 +72,126 @@ function buildHeaderCards(data) {
     document.getElementById('cards-header').innerHTML = html;
 }
 
+// --- NEW FIX: Sync DOM values to State before re-rendering ---
+function syncDOMToState() {
+    const rows = document.querySelectorAll('tr[data-group-key]');
+    rows.forEach(tr => {
+        const groupKey = tr.getAttribute('data-group-key');
+        const manualId = tr.getAttribute('data-manual-id');
+        const accountId = tr.getAttribute('data-account-id');
+        
+        const group = globalState.data.find(g => g.key === groupKey);
+        if (!group) return;
+
+        // Find the specific row object in memory
+        let dataRow = null;
+        if (manualId) {
+            dataRow = group.data.find(r => r.manualId === manualId);
+        } else if (accountId) {
+            dataRow = group.data.find(r => r.account_id == accountId);
+        }
+
+        if (!dataRow) return;
+
+        // 1. Grab current values typed into inputs
+        const nameInput = tr.querySelector('.manual-name');
+        if (nameInput) dataRow.account_name = nameInput.value;
+
+        const totalInput = tr.querySelector('.manual-total');
+        if (totalInput) dataRow.total = parseFloat(totalInput.value) || 0;
+
+        const projInput = tr.querySelector('.manual-projection');
+        if (projInput) dataRow.projection = parseFloat(projInput.value) || 0;
+
+        const cashSelect = tr.querySelector('.cash-select');
+        if (cashSelect) dataRow.cash_account = cashSelect.value !== "null" ? parseInt(cashSelect.value) : null;
+        
+        // 2. Also sync to saved_data array if it exists there, since buildCards reads from it first
+        if (globalState.saved) {
+            let savedRow = null;
+            if (accountId) {
+                savedRow = globalState.saved.find(s => s.id == accountId && s.key === groupKey);
+            } else if (dataRow.account_name) {
+                savedRow = globalState.saved.find(s => s.id == null && s.key === groupKey && s.name === dataRow.account_name);
+            }
+            if (savedRow) {
+                if (totalInput) savedRow.total = dataRow.total;
+                if (projInput) savedRow.projection = dataRow.projection;
+                if (cashSelect) savedRow.cash_account = dataRow.cash_account;
+                if (nameInput) savedRow.name = dataRow.account_name;
+            }
+        }
+    });
+}
+
 // --- 3. Add/Delete Functions ---
 function addManual(groupKey) {
+    // REMOVED saveData() here to prevent full page reloads and let users type locally.
+    // Instead, we sync what they just typed into memory.
+    syncDOMToState(); 
+
     const group = globalState.data.find(g => g.key === groupKey);
     if (!group) return;
+
     const scrollPosition = window.scrollY;
     const manualId = 'manual-' + Date.now();
-    const newRecord = { isNew: true, manualId, key: group.key, account_id: null, account_name: "Cuenta Disponible", total: 0, account_code: "MANUAL", percent: 0, percent_projection: 0, opening: 0, debit: 0, credit: 0 };
+    const newRecord = { isNew: true, manual_id: manualId, manualId, key: group.key, account_id: null, account_name: "Cuenta Disponible", total: 0, account_code: "MANUAL", percent: 0, percent_projection: 0, opening: 0, debit: 0, credit: 0, projection: 0 };
+    console.log(newRecord);
+    console.log(globalState.saved);
     group.data.push(newRecord);
+    globalState.saved.push(newRecord);
+    console.log(globalState.saved);
     buildCards(globalState.data, globalState.cash_accounts, globalState.saved);
-    window.scrollTo(0, scrollPosition);
+    saveDataSilent();
+     moveToID(manualId);
+    // window.scrollTo(0, scrollPosition);
 }
 
 function deleteManual(groupKey, manualId) {
+    // Sync typed text before deleting so other rows don't lose their data
+    syncDOMToState();
     const group = globalState.data.find(g => g.key === groupKey);
+    const savedEntry = globalState.saved.findIndex(g => g.manual_id === manualId);
+    if(manualId != null){
+globalState.saved.splice(savedEntry,1);
+    }
     if (!group) return;
     const scrollPosition = window.scrollY;
     const rowIndex = group.data.findIndex(row => row.manualId === manualId);
     if (rowIndex > -1) {
         group.data.splice(rowIndex, 1);
     }
-    buildCards(globalState.data, globalState.cash_accounts,globalState.saved);
-    window.scrollTo(0, scrollPosition);
+    moveToID(manualId, true);
+    buildCards(globalState.data, globalState.cash_accounts, globalState.saved);
+    saveDataSilent();
+
 }
 
 // --- 4. The `buildCards` Rendering Function ---
-// --- 4. The `buildCards` Rendering Function ---
 function buildCards(data, cash_accounts, saved_data) {
-    // console.log("Saved Data:", saved_data);
-    
     if (masonryInstance) masonryInstance.destroy();
     document.querySelectorAll('.js-bootstrap-table').forEach(table => $(table).bootstrapTable('destroy'));
 
     // --- PRE-PROCESSING: Inject saved manual rows into the data arrays ---
-    // If we have manual entries saved (id is null), we need to add them to the correct group 
-    // so they are rendered in the table on page load.
     if (saved_data && saved_data.length > 0) {
         saved_data.forEach(savedRow => {
             if (savedRow.id === null) {
                 let group = data.find(g => g.key === savedRow.key);
                 if (group && group.manual) {
-                    // Check if it already exists to avoid duplicates during re-renders
                     let exists = group.data.find(r => r.isNew && r.account_name === savedRow.name);
                     if (!exists) {
+                        let manual_id = savedRow.manual_id ?? 'saved-manual-' + Math.random().toString(36).substr(2, 9);
                         group.data.push({
-                            isNew: true, // Flags it as a manual row to get inputs and delete button
-                            manualId: 'saved-manual-' + Math.random().toString(36).substr(2, 9),
+                            isNew: true,
+                            manualId: manual_id,
                             key: group.key,
                             account_id: null,
                             account_name: savedRow.name,
                             total: savedRow.total,
                             account_code: savedRow.code || "MANUAL",
                             percent: 0,
-                            percent_projection: 0
+                            percent_projection: 0,
+                            projection: savedRow.projection
                         });
                     }
                 }
@@ -164,9 +234,7 @@ function buildCards(data, cash_accounts, saved_data) {
                             </div>
                         </div>
                     </div>
-                </div>
-                
-            `;
+                </div>`;
 
         if (group.data.length > 0) {
             html += `
@@ -186,33 +254,38 @@ function buildCards(data, cash_accounts, saved_data) {
                         <tbody>`;
 
             group.data.forEach(row => {
-                // Get base amount
                 let amount = row[group.total_attribute];
                 if (amount === undefined) amount = row['total'] || 0;
 
-                // --- 1. FIND MATCHING SAVED DATA ---
                 let savedRow = null;
                 if (saved_data) {
                     if (row.account_id) {
-                        // Match normal rows by ID
                         savedRow = saved_data.find(s => s.id == row.account_id && s.key === group.key);
                     } else {
-                        // Match manual rows by name
                         savedRow = saved_data.find(s => s.id == null && s.key === group.key && s.name === row.account_name);
+
                     }
                 }
 
-                // --- 2. EXTRACT VALUES ---
-                let valTotal = savedRow ? savedRow.total : amount;
-                // let valProj = savedRow ? savedRow.projection : (0);
-                let valPercProj = savedRow ? savedRow.percent_projection : (row.projection_percent || 0);
-                let valPerc = savedRow ? savedRow.percent : (row.projection_percent || 0);
-                let valProj = savedRow ? savedRow.projection : 0;
-                // let valProj = savedRow ? savedRow.projection : (row.projection_entry || 0);
-                let valCash = savedRow ? savedRow.cash_account : null;
+                // --- 2. EXTRACT VALUES (MODIFIED TO SUPPORT SYNCED UI TEXT) ---
+                let valTotal = savedRow ? savedRow.total : (row.total !== undefined && row.isNew ? row.total : amount);
+                let valPercProj = savedRow ? savedRow.percent_projection : (row.percent_projection || 0);
+                let valPerc = savedRow ? savedRow.percent : (row.percent || 0);
+                
+                // Fallback priority: 1. Server Save -> 2. Synced UI Typings -> 3. Backend array default
+                let valProj = 0;
+                if (savedRow) {
+                    valProj = savedRow.projection;
+                } else if (row.projection !== undefined) {
+                    valProj = row.projection; // Grab the typed projection we synced
+                } else {
+                    valProj = row.projection_entry || 0;
+                }
+                
+                let valCash = savedRow ? savedRow.cash_account : (row.cash_account !== undefined ? row.cash_account : null);
+
 
                 // --- 3. DYNAMIC CASH ACCOUNT SELECT ---
-                // Rebuild the select per row to properly attach the "selected" attribute
                 let row_cash_select = `<select class="form-control cash-select">
                                         <option value="null" ${valCash == null ? 'selected' : ''}>Sin Cuenta</option>`;
                 cash_accounts.forEach(account => {
@@ -226,13 +299,11 @@ function buildCards(data, cash_accounts, saved_data) {
                 let nameCell = `<td>${row.account_name}</td>`;
                 let totalCell = `<td class="text-end">${formatCurrency(valTotal)}</td>`;
 
-                // If it is a manual row (new or loaded from save), show Inputs
                 if (row.isNew) {
                     nameCell = `<td><input type="text" class="form-control manual-name" value="${row.account_name}"></td>`;
                     totalCell = `<td><input type="number" class="form-control manual-total" value="${valTotal}"></td>`;
                 }
 
-                // Delete button for manual groups
                 if (group.manual) {
                     const deleteButton = row.isNew ? `<button onclick="deleteManual('${group.key}', '${row.manualId}')" class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button>` : '';
                     actionsCell = `<td>${deleteButton}</td>`;
@@ -240,31 +311,22 @@ function buildCards(data, cash_accounts, saved_data) {
 
                 let percentTotalCell = `<td class="text-end">${formatMoney(row.percent_projection)}</td>`;
                 let percentCell = ` <td class="text-end">${formatMoney(row.percent)}</td>`;
-                // Projection logic based on previous rules
                 let projectionCell = '';
+
                 if (group.manual) {
-                    // Rule: "on the group that has manual attribute as true i need that projection be a number not an input"
-                    // projectionCell = `<td class="text-end">${formatCurrency(valProj)}</td>`;
                     projectionCell = `<td><input type="number" class="form-control manual-projection" value="${valProj}"></td>`;
                     percentTotalCell = `<td class="text-end">${formatMoney(valPercProj)}</td>`;
                     percentCell = ` <td class="text-end">${formatMoney(valPerc)}</td>`;
-                    
                 } else if (group.projection_manual) {
-                    // Rule: "set the value of projection on the manual-projection input"
                     projectionCell = `<td><input type="number" class="form-control manual-projection" value="${valProj}"></td>`;
                 } else {
-                    projectionCell = `<td class="text-end">${formatCurrency(valProj)}</td>`;
-                }
-                if (group.projection_manual == false) {
-                    // console.log(group);
-                    valProj = savedRow ? savedRow.projection : (row.projection_entry || 0);
                     projectionCell = `<td class="text-end">${formatCurrency(valProj)}</td>`;
                 }
 
                 const cashAccountCell = group.projection_manual ? `<td class="text-end">${row_cash_select}</td>` : '';
 
                 html += `
-                    <tr data-group-key="${group.key}" 
+                    <tr id="${row.manualId || ''}" data-group-key="${group.key}" 
                         data-manual-id="${row.manualId || ''}"
                         data-account-id="${row.account_id || ''}"
                         data-account-name="${row.account_name || ''}"
@@ -289,65 +351,56 @@ function buildCards(data, cash_accounts, saved_data) {
 
     const container = document.getElementById('cards-container');
     container.innerHTML = html;
-
     document.querySelectorAll('.js-bootstrap-table').forEach(table => $(table).bootstrapTable());
+    
     setTimeout(() => {
         masonryInstance = new Masonry(container, { itemSelector: '.grid-item', percentPosition: true });
     }, 100);
 }
 
-
-// --- 5. Save Functionality (REBUILT) ---
+// --- 5. Save Functionality ---
 function saveData() {
     const entriesToSave = [];
-    
-    // We only care about rows we tagged with 'data-group-key'
     const rows = document.querySelectorAll('tr[data-group-key]');
-    
+
     rows.forEach(row => {
         const groupKey = row.getAttribute('data-group-key');
         const group = globalState.data.find(g => g.key === groupKey);
-        
         if (!group) return;
 
-        // ONLY target groups that have manual=true OR projection_manual=true
         if (!group.manual && !group.projection_manual) return;
 
         const isNew = row.getAttribute('data-manual-id') !== "";
         let entry = null;
 
         if (group.manual) {
-            // For manual groups: Only save the newly added rows
             if (isNew) {
                 const nameInput = row.querySelector('.manual-name');
                 const totalInput = row.querySelector('.manual-total');
                 const projInput = row.querySelector('.manual-projection');
-
-                
                 entry = {
                     key: group.key,
                     id: null,
                     name: nameInput ? nameInput.value : 'N/A',
+                    manual_id: row.getAttribute('data-manual-id') || '',
                     total: totalInput ? parseFloat(totalInput.value) || 0 : 0,
                     projection: projInput ? parseFloat(projInput.value) || 0 : 0,
                     code: ""
                 };
             }
         } else if (group.projection_manual) {
-            // For purely projection groups: Save all rows (to capture their projection input)
             const projInput = row.querySelector('.manual-projection');
-            
             entry = {
                 key: group.key,
                 id: parseInt(row.getAttribute('data-account-id')) || null,
                 name: row.getAttribute('data-account-name') || '',
+                manual_id: row.getAttribute('data-manual-id') || '',
                 total: parseFloat(row.getAttribute('data-total')) || 0,
                 projection: projInput ? parseFloat(projInput.value) || 0 : 0,
                 code: row.getAttribute('data-account-code') || ''
             };
         }
 
-        // If a valid entry was created, check for the cash_account select dropdown
         if (entry) {
             const cashSelect = row.querySelector('.cash-select');
             if (cashSelect) {
@@ -355,27 +408,27 @@ function saveData() {
                 if (selectedVal !== "null" && selectedVal !== null && selectedVal !== "") {
                     entry.cash_account = parseInt(selectedVal);
                 } else {
-                    entry.cash_account = null; // Stays null if "Sin Cuenta" is selected
+                    entry.cash_account = null;
                 }
             }
             entriesToSave.push(entry);
         }
     });
 
-    console.log("--- Data to Save ---");
-    console.log(entriesToSave);
+    console.log("--- Data to Save ---", entriesToSave);
 
     let data_url = document.getElementById("data_url_save").value;
-
     const month = document.getElementById('month-filter')?.value;
     const year = document.getElementById('year-filter')?.value || new Date().getFullYear();
     const token = localStorage.getItem('finance_auth_token');
+    
     if (!token) return;
+
     fetch(data_url, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
             month: month,
@@ -386,17 +439,100 @@ function saveData() {
     .then(res => res.json())
     .then(res => {
         console.log(res);
-        showAlert("Archivo guardado","Se han actualizado correctamente los datos","","success")
-        initRequest();
-
+        if(typeof showAlert === "function") showAlert("Archivo guardado", "Se han actualizado correctamente los datos", "", "success");
+        initRequest(); // Resync state with backend
     })
     .catch(err => {
         console.error(err);
-                showAlert("Ha ocurrido un error", "No se han actualizado correctamente los datos, intente de nuevo", "", "danger")
-
+        if(typeof showAlert === "function") showAlert("Ha ocurrido un error", "No se han actualizado correctamente los datos, intente de nuevo", "", "danger");
     });
-    // console.log(JSON.stringify(entriesToSave, null, 2));
-    // alert(`${entriesToSave.length} entries have been prepared for saving. (Check Console)`);
+}
+
+// --- 5. Save Functionality ---
+function saveDataSilent() {
+    const entriesToSave = [];
+    const rows = document.querySelectorAll('tr[data-group-key]');
+
+    rows.forEach(row => {
+        const groupKey = row.getAttribute('data-group-key');
+        const group = globalState.data.find(g => g.key === groupKey);
+        if (!group) return;
+
+        if (!group.manual && !group.projection_manual) return;
+
+        const isNew = row.getAttribute('data-manual-id') !== "";
+        let entry = null;
+
+        if (group.manual) {
+            if (isNew) {
+                const nameInput = row.querySelector('.manual-name');
+                const totalInput = row.querySelector('.manual-total');
+                const projInput = row.querySelector('.manual-projection');
+                entry = {
+                    key: group.key,
+                    id: null,
+                    name: nameInput ? nameInput.value : 'N/A',
+                    manual_id: row.getAttribute('data-manual-id') || '',
+                    total: totalInput ? parseFloat(totalInput.value) || 0 : 0,
+                    projection: projInput ? parseFloat(projInput.value) || 0 : 0,
+                    code: ""
+                };
+            }
+        } else if (group.projection_manual) {
+            const projInput = row.querySelector('.manual-projection');
+            entry = {
+                key: group.key,
+                id: parseInt(row.getAttribute('data-account-id')) || null,
+                name: row.getAttribute('data-account-name') || '',
+                manual_id: row.getAttribute('data-manual-id') || '',
+                total: parseFloat(row.getAttribute('data-total')) || 0,
+                projection: projInput ? parseFloat(projInput.value) || 0 : 0,
+                code: row.getAttribute('data-account-code') || ''
+            };
+        }
+
+        if (entry) {
+            const cashSelect = row.querySelector('.cash-select');
+            if (cashSelect) {
+                const selectedVal = cashSelect.value;
+                if (selectedVal !== "null" && selectedVal !== null && selectedVal !== "") {
+                    entry.cash_account = parseInt(selectedVal);
+                } else {
+                    entry.cash_account = null;
+                }
+            }
+            entriesToSave.push(entry);
+        }
+    });
+
+
+    let data_url = document.getElementById("data_url_save").value;
+    const month = document.getElementById('month-filter')?.value;
+    const year = document.getElementById('year-filter')?.value || new Date().getFullYear();
+    const token = localStorage.getItem('finance_auth_token');
+    
+    if (!token) return;
+
+    fetch(data_url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+            month: month,
+            year: year,
+            data: entriesToSave
+        })
+    })
+    .then(res => res.json())
+    .then(res => {
+        console.log(res);
+    })
+    .catch(err => {
+        // console.error(err);
+        // if(typeof showAlert === "function") showAlert("Ha ocurrido un error", "No se han actualizado correctamente los datos, intente de nuevo", "", "danger");
+    });
 }
 
 // --- 6. Event Listeners & Helpers ---
@@ -405,7 +541,6 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById("refresh").addEventListener("click", initRequest);
     document.getElementById("save").addEventListener("click", saveData);
 });
-
 
 window.addManual = addManual;
 window.deleteManual = deleteManual;

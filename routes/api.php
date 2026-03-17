@@ -23,6 +23,7 @@ Route::middleware('firebase.jwt')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('api.dashboard');
     Route::get('/accounts', [AccountController::class, 'index'])->name('api.accounts');
     Route::get('/accounts/all', [AccountController::class, 'all'])->name('api.accounts.all');
+    Route::get('/accounts/entries', [AccountController::class, 'new_entry'])->name('api.accounts.entries');
     Route::get('/journal', [JournalEntryController::class, 'index'])->name('api.journal');
     Route::get('/voucher', [JournalEntryController::class, 'voucher'])->name('api.voucher');
     Route::get('/journal/filters', [JournalEntryController::class, 'filters'])->name('api.journal.filters');
@@ -37,6 +38,8 @@ Route::middleware('firebase.jwt')->group(function () {
     Route::get('/average', [AverageController::class, 'index'])->name('api.average');
     Route::get('/balance_sheet', [BalanceSheetController::class, 'index'])->name('api.balance-sheet');
     Route::post('/accounts', [AccountController::class, 'store'])->name('accounts.add');
+    Route::put('/accounts', [AccountController::class, 'edit'])->name('accounts.edit');
+    Route::delete('/accounts', [AccountController::class, 'delete'])->name('delete');
     Route::post('/entries', [JournalEntryController::class, 'store'])->name('entries.add');
     Route::put('/entries', [JournalEntryController::class, 'change'])->name('entries.update');
     Route::delete('/entries', [JournalEntryController::class, 'delete'])->name('entries.delete');

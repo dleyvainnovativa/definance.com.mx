@@ -1,8 +1,11 @@
 function ajaxRequest(params) {
+    const checkbox = document.getElementById('detailsCheckbox');
+
     const token = localStorage.getItem('finance_auth_token');
     const url = new URL(params.url);
-
+    
     url.searchParams.set('search', params.data.search || '');
+    url.searchParams.set('details', checkbox.checked ? 'true' : 'false');
     url.searchParams.set('page', (params.data.offset / params.data.limit) + 1);
     url.searchParams.set('limit', params.data.limit);
 
@@ -117,7 +120,7 @@ document.addEventListener('DOMContentLoaded', function () {
         $table.bootstrapTable('toggleCustomView', true);
     }
     }
-    $('#month-filter, #year-filter').on('change', function () {
+    $('#month-filter, #year-filter, #detailsCheckbox').on('change', function () {
         $table.bootstrapTable('refresh', {
             pageNumber: 1
         });

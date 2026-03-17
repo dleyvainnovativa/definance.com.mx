@@ -37,6 +37,17 @@
             <option value="2025">2025</option>
         </select>
     </div>
+    <div class="col-auto text-start mt-auto">
+        <div class="form-check">
+            <input
+                class="form-check-input"
+                type="checkbox"
+                id="detailsCheckbox">
+            <label class="form-check-label" for="detailsCheckbox">
+                Mostrar detalles
+            </label>
+        </div>
+    </div>
 
     <div class="col-12 text-dark">
         <div class="row g-4" id="cards-header">
