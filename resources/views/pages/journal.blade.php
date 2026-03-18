@@ -56,6 +56,8 @@
                 data-response-handler="responseHandler"
                 data-show-custom-view="true"
                 data-custom-view="customViewFormatter"
+                data-sticky-header="true"
+                data-sticky-header-offset-y="60"
                 data-show-custom-view-button="true"
                 data-ajax="ajaxRequest">
                 <thead>

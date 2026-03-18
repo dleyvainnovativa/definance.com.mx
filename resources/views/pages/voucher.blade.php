@@ -57,6 +57,8 @@
                 data-show-custom-view="true"
                 data-custom-view="customViewFormatter"
                 data-show-custom-view-button="true"
+                data-sticky-header="true"
+                data-sticky-header-offset-y="60"
                 data-ajax="ajaxRequest">
                 <thead>
                     <tr>
