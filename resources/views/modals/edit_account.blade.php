@@ -25,7 +25,7 @@
 
             <div class="modal-footer card-dark border-0">
                 <a class="btn btn-outline-primary" data-bs-dismiss="modal">Cancelar</a>
-                <button type="submit" class="btn btn-primary">Editar cuenta</button>
+                <button type="submit" class="btn btn-primary">Guardar Cambios</button>
             </div>
         </form>
     </div>
