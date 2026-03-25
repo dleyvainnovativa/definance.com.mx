@@ -295,7 +295,7 @@ class TrialBalanceController extends Controller
                     ->whereIn('j.entry_type', ['opening_balance', 'opening_balance_credit'])
                     ->whereDate('j.entry_date', '<=', $lastDay);
                 // ->whereBetween('j.entry_date', [$firstDay, $lastDay]);
-            });
+            })->where("a.user_id", $userId);
 
         $openingQuery = DB::query()
             ->fromSub($openingJournalQuery, 'op') // Usa la subconsulta 'opening' como tabla base 'op'
