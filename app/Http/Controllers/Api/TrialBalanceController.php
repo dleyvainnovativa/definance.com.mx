@@ -226,6 +226,7 @@ class TrialBalanceController extends Controller
             ->select('user_id', 'debit_account_id as account_id', 'debit_account_code as account_code', 'debit_account_name as account_name', DB::raw('SUM(debit) as debit'))
             ->whereMonth('entry_date', $month)
             ->whereYear('entry_date', $year)
+            ->where("user_id", $userId)
             ->groupBy('user_id', 'debit_account_id', 'debit_account_code', 'debit_account_name');
 
         // --- Subconsulta para 'credit' CTE ---
@@ -233,6 +234,7 @@ class TrialBalanceController extends Controller
             ->select('user_id', 'credit_account_id as account_id', 'credit_account_code as account_code', 'credit_account_name as account_name', DB::raw('SUM(credit) as credit'))
             ->whereMonth('entry_date', $month)
             ->whereYear('entry_date', $year)
+            ->where("user_id", $userId)
             ->groupBy('user_id', 'credit_account_id', 'credit_account_code', 'credit_account_name');
 
         // --- Subconsulta para 'opening' CTE ---
