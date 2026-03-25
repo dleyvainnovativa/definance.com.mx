@@ -84,10 +84,10 @@
                         <th data-field="nature" data-footer-formatter="footerNullText" data-sortable="true">Naturaleza</th>
                         <th data-field="account_name" data-footer-formatter="footerNullText" data-sortable="true">Cta Cargo</th>
                         <th data-field="account_code" data-footer-formatter="footerNullText" data-sortable="true">ID Contable</th>
-                        <th data-field="opening" data-footer-formatter="footerSum" data-falign="left" data-sortable="true">Saldo Inicial</th>
-                        <th data-field="debit" data-footer-formatter="footerSum" data-falign="left" data-sortable="true">Cargos</th>
-                        <th data-field="credit" data-footer-formatter="footerSum" data-falign="left" data-sortable="true">Abonos</th>
-                        <th data-field="total" data-footer-formatter="footerSum" data-falign="left" data-sortable="true">Saldo</th>
+                        <th data-field="opening" data-formatter="formatCurrency" data-footer-formatter="footerSum" data-falign="left" data-sortable="true">Saldo Inicial</th>
+                        <th data-field="debit" data-formatter="formatCurrency" data-footer-formatter="footerSum" data-falign="left" data-sortable="true">Cargos</th>
+                        <th data-field="credit" data-formatter="formatCurrency" data-footer-formatter="footerSum" data-falign="left" data-sortable="true">Abonos</th>
+                        <th data-field="total" data-formatter="formatCurrency" data-footer-formatter="footerSum" data-falign="left" data-sortable="true">Saldo</th>
                     </tr>
                 </thead>
             </table>

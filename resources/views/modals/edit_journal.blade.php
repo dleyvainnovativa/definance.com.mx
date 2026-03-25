@@ -50,10 +50,6 @@
                         <input type="number" id="journal_entry_amount" name="amount" step="0.01" class="form-control card-dark border border-dark text-dark" required="">
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Referencia</label>
-                        <input type="text" id="journal_entry_reference" name="reference" class="form-control card-dark border border-dark text-dark">
-                    </div>
-                    <div class="col-md-6">
                         <label class="form-label">Concepto</label>
                         <input type="text" id="journal_entry_concept" name="description" class="form-control card-dark border border-dark text-dark" required="">
                     </div>

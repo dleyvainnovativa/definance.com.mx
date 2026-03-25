@@ -156,12 +156,12 @@ function buildCards(data, year) {
                                 <tr class="">
                                     <th data-field="account_code" class="p-3 ">Code</th>
                                     <th data-field="account_name" class="p-3 ">Account</th>
-                                    <th data-field="total" class="p-3 text-end">Monto</th>
+                                    <th data-formatter="formatCurrency" data-field="total" class="p-3 text-end">Monto</th>
                                     <th data-field="percent" class="p-3 text-end">Porcentaje</th>
                                     <th data-field="pr" class="p-3 text-center">%PR</th>
-                                    <th data-field="annual" class="p-3 text-end">Anual</th>
+                                    <th data-formatter="formatCurrency" data-field="annual" class="p-3 text-end">Anual</th>
                                     <th data-field="pl" class="p-3 text-end">%PL</th>
-                                    <th data-field="monthly" class="p-3 text-end">Mensual</th>
+                                    <th data-formatter="formatCurrency" data-field="monthly" class="p-3 text-end">Mensual</th>
                                 </tr>
                             </thead>
                             <tbody>

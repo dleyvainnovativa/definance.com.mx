@@ -132,7 +132,6 @@
             "debit_account_id": form.debit_account_id.value,
             "credit_account_id": form.credit_account_id.value || null, // Handles disabled state
             "description": form.description.value,
-            "reference": form.reference.value,
             // "applies_se": form.applies_se.value,
             // "applies_fe": form.applies_fe.value
         };

@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/',)->name('api');
 
+// Route::get('/test', [JournalEntryController::class, 'setCloseAccounts']);
 
 Route::middleware('firebase.jwt')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('api.dashboard');

@@ -30,9 +30,9 @@
                     <label class="form-label">Monto</label>
                     <input type="number" name="amount" step="0.01" class="form-control card-dark border border-dark text-dark" required>
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label">Referencia</label>
-                    <input type="text" name="reference" class="form-control card-dark border border-dark text-dark" required>
+                <div class="col-6">
+                    <label class="form-label">Concepto</label>
+                    <input name="description" class="form-control card-dark border border-dark text-dark" required>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">Forma de Pago</label>
@@ -41,10 +41,6 @@
                 <div class="col-md-6">
                     <label class="form-label">Cuenta Abono</label>
                     <select name="credit_account_id" id="credit_account_id" class="form-select" disabled></select>
-                </div>
-                <div class="col-12">
-                    <label class="form-label">Concepto</label>
-                    <textarea name="description" class="form-control card-dark border border-dark text-dark" required></textarea>
                 </div>
                 <div class="col-12 text-end">
                     <button type="submit" class="btn btn-primary">Guardar Movimiento</button>

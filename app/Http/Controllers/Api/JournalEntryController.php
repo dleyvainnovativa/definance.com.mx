@@ -267,7 +267,6 @@ class JournalEntryController extends Controller
             'debit_account_id' => ['required', 'exists:chart_of_accounts,id'],
             'credit_account_id' => ['required', 'exists:chart_of_accounts,id'],
             'description' => ['required', 'string'],
-            'reference' => ['nullable', 'string'],
             // 'applies_se' => ['nullable', 'boolean'],
             // 'applies_fe' => ['nullable', 'string'],
         ]);
@@ -275,7 +274,7 @@ class JournalEntryController extends Controller
         $entry_date = $request->entry_date;
         $entry_type = $request->entry_type;
         $description = $request->description;
-        $reference = $request->reference;
+        $reference = "manual";
         $amount = $request->amount;
         $debit_account_id = $request->debit_account_id;
         $credit_account_id = $request->credit_account_id;
@@ -295,6 +294,7 @@ class JournalEntryController extends Controller
         self::create($userId, $entry_date, $entry_type, $description, $reference, $amount, $debit_account_id, $credit_account_id);
         $results = self::setOpening($request->debit_account_id, $request->credit_account_id, $month, $year, $userId);
         self::setOpening($credit_account_id, $request->debit_account_id, $month, $year, $userId);
+        self::setCloseAccounts($year, $userId);
         self::setOpeningDeficit($year, $userId);
 
         $results = [];
@@ -314,7 +314,6 @@ class JournalEntryController extends Controller
             'entry_type' => ['required', 'in:income,expense,opening_balance,opening_balance_credit,transfer'],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'description' => ['required', 'string'],
-            'reference' => ['nullable', 'string'],
         ]);
         $userId = $request->user()->id;
         $entry_id = $request->entry_id;
@@ -323,7 +322,7 @@ class JournalEntryController extends Controller
         $entry_date = $request->entry_date;
         $entry_type = $request->entry_type;
         $description = $request->description;
-        $reference = $request->reference;
+        $reference = "manual";
         $amount = $request->amount;
 
 
@@ -608,20 +607,23 @@ class JournalEntryController extends Controller
         $results = $trial->where('op.account_id', $account_id)->get()->first();
         $total = $results->total ?? 0;
         $nature = $results->nature;
+        $account_code = $results->account_code;
         $validation = self::validateOpening($userId, $account_id, $credit_account_id, $month, $year, $nature);
-        $prefixes = ['400.', '500.', '600.', '700.', '800.', '900.'];
+        $prefixes = collect(['400.', '500.', '600.', '700.', '800.', '900.']);
         // dd($validation, $results, $total);
         $opening_type = $nature == "debit" ? "opening_balance" : "opening_balance_credit";
         $nextDate = $validation["date"];
+        // If Month == 12 and account_id has prefix on $prefixes then $total = 0 
+        if ($month == 12 && $prefixes->contains(fn($p) => str_starts_with($account_code, $p))) {
+            $total = 0;
+        }
         if ($validation["new"] == true) {
-            Log::debug('NewOpening', [$userId, "$nextDate", $opening_type, "Saldo Inicial", "Saldo Inicial 4", $total, $account_id, $credit_account_id]);
-            // If Month == 12 and account_id has prefix on $prefixes then $total = 0 
-            self::create($userId, "$nextDate", $opening_type, "Saldo Inicial Nuevo", "Saldo Inicial", $total, $account_id, null);
+            Log::debug('NewOpening', [$userId, "$account_code", "$nextDate", $opening_type, "Saldo Inicial", "Saldo Inicial 4", $total, $account_id, $credit_account_id]);
+            self::create($userId, "$nextDate", $opening_type, "Saldo Inicial Nuevo", "automatic", $total, $account_id, null);
         } else {
             $entry_id = $validation["entry_id"];
             Log::debug('UpdateOpening', [$entry_id, $userId, "$nextDate", $opening_type, "Saldo Inicial", "Saldo Inicial 4", $total, $account_id, $credit_account_id]);
-            // If Month == 12 and account_id has prefix on $prefixes then $total = 0 
-            self::update($entry_id, $userId, "$nextDate", $opening_type, "Saldo Inicial Update", "Saldo Inicial", $total, $account_id, null);
+            self::update($entry_id, $userId, "$nextDate", $opening_type, "Saldo Inicial Update", "automatic", $total, $account_id, null);
         }
         return [$results, $validation];
     }
@@ -642,11 +644,11 @@ class JournalEntryController extends Controller
         $nextDate = $validation["date"];
         if ($validation["new"] == true) {
             Log::debug('NewOpeningDeficit', [$userId, "$nextDate", $opening_type, "Saldo Inicial", "Saldo Inicial 4", $totalAmount, $account_id, $account_id]);
-            self::create($userId, "$nextDate", $opening_type, "Saldo Inicial Nuevo", "Saldo Inicial", $totalAmount, $account_id, null);
+            self::create($userId, "$nextDate", $opening_type, "Saldo Inicial Nuevo", "automatic", $totalAmount, $account_id, null);
         } else {
             $entry_id = $validation["entry_id"];
             Log::debug('UpdateOpeningDeficit', [$entry_id, $userId, "$nextDate", $opening_type, "Saldo Inicial", "Saldo Inicial 4", $totalAmount, $account_id, $account_id]);
-            self::update($entry_id, $userId, "$nextDate", $opening_type, "Saldo Inicial Update", "Saldo Inicial", $totalAmount, $account_id, null);
+            self::update($entry_id, $userId, "$nextDate", $opening_type, "Saldo Inicial Update", "automatic", $totalAmount, $account_id, null);
         }
         return [$account, $validation];
     }
@@ -655,6 +657,7 @@ class JournalEntryController extends Controller
         $nextMonth = self::getNextMonth($month, $year);
         $nextYear = self::getNextYear($month, $year);
         $nextEntryDate = "";
+
         $query = DB::table('journal')
             ->where('user_id', $userId)
             ->where(function ($q) use ($account_id, $nature) {
@@ -893,5 +896,63 @@ class JournalEntryController extends Controller
         ];
 
         return $map[$type] ?? 'Desconocido';
+    }
+
+    public static function setCloseAccounts($year, $userId)
+    {
+        $prefixes = ['400.', '500.', '600.', '700.', '800.', '900.'];
+        $accounts = DB::table("accounts")
+            ->where("user_id", $userId)
+            ->where(function ($query) use ($prefixes) {
+                foreach ($prefixes as $prefix) {
+                    $query->orWhere('code', 'like', $prefix . '%');
+                }
+            })
+            ->get();
+        $nextYear = self::getNextYear(12, $year);
+        foreach ($accounts as $key => $account) {
+            $account_id = $account->id;
+            $nature = $account->nature;
+            $query = DB::table('journal')
+                ->where('user_id', $userId)
+                ->where(function ($q) use ($account_id, $nature) {
+                    if ($nature == "debit") {
+                        $q->where('debit_account_id', $account_id);
+                    } elseif ($nature == "credit") {
+                        $q->where('credit_account_id', $account_id);
+                    }
+                    // ->orWhere('credit_account_id', $account_id);
+                })
+                ->whereMonth('entry_date', 1)
+                ->whereYear('entry_date', $nextYear)
+                ->whereIn('entry_type', [
+                    'opening_balance',
+                    'opening_balance_credit',
+                ]);
+            $journal = $query->get();
+            $nextDate = sprintf('%04d-%02d-01', $nextYear, 1);
+            $opening_type = $nature == "debit" ? "opening_balance" : "opening_balance_credit";
+            if ($journal->isEmpty()) {
+                // $validation["new"] = true;
+                // $validation["entry_id"] = null;
+                // $validation["userId"] = $userId;
+                // $validation["nextDate"] = $nextDate;
+                // $validation["opening_type"] = $opening_type;
+                // $validation["description"] = "Saldo Inicial Nuevo";
+                // $validation["reference"] = "automatic";
+                self::create($userId, "$nextDate", $opening_type, "Saldo Inicial Nuevo", "automatic", 0, $account_id, null);
+            } else {
+                // $validation["new"] = false;
+                // $validation["entry_id"] = $journal[0]->entry_id;
+                // $validation["userId"] = $userId;
+                // $validation["nextDate"] = $nextDate;
+                // $validation["opening_type"] = $opening_type;
+                // $validation["description"] = "Saldo Inicial Update";
+                // $validation["reference"] = "automatic";
+                if ($journal[0]->reference == "automatic") {
+                    self::update($journal[0]->entry_id, $userId, "$nextDate", $opening_type, "Saldo Inicial Update", "automatic", 0, $account_id, null);
+                }
+            }
+        }
     }
 }

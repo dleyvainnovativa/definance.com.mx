@@ -106,7 +106,7 @@ const creditSelect = document.getElementById('journal_credit_account_id');
         }
     });
 
-    
+
 
     initRequest();
 })();
@@ -142,7 +142,6 @@ async function editJournal(form) {
         entry_type: form.journal_entry_type.value,
         amount: form.journal_entry_amount.value,
         description: form.journal_entry_concept.value,
-        reference: form.journal_entry_reference.value
     };
 
     try {
@@ -164,12 +163,12 @@ async function editJournal(form) {
         bsModal.hide();
         form.reset();
         // Reset Choices internal state
-debitChoices.clearStore();
-creditChoices.clearStore();
+        debitChoices.clearStore();
+        creditChoices.clearStore();
 
-// Re-populate choices
-populateChoices(debitChoices, allAccounts);
-populateChoices(creditChoices, allAccounts);
+        // Re-populate choices
+        populateChoices(debitChoices, allAccounts);
+        populateChoices(creditChoices, allAccounts);
         showAlert("Perfil actualizado", "Se han actualizado correctamente los datos", "", "success")
 
     } catch (error) {
@@ -324,8 +323,8 @@ document.addEventListener('DOMContentLoaded', async function () {
                 }
 
 
-await populateChoices(debitChoices, allAccounts, row.credit_account_id);
-await populateChoices(creditChoices, allAccounts, row.debit_account_id);
+                await populateChoices(debitChoices, allAccounts, row.credit_account_id);
+                await populateChoices(creditChoices, allAccounts, row.debit_account_id);
                 // document.getElementById("journal_debit_account_id").value = row.dedit_account_id;
                 // document.getElementById("journal_credit_account_id").value = row.credit_account_id;
                 debitChoices.setChoiceByValue(row.debit_account_id);
@@ -334,7 +333,6 @@ await populateChoices(creditChoices, allAccounts, row.debit_account_id);
                 document.getElementById("journal_entry_date").value = formatDate(row.entry_date);
                 document.getElementById("journal_entry_type").value = row.entry_type;
                 document.getElementById("journal_entry_amount").value = amount;
-                document.getElementById("journal_entry_reference").value = row.reference;
                 document.getElementById("journal_entry_concept").value = row.description;
                 bsModal.show();
             }
@@ -511,7 +509,9 @@ async function removeMultipleJournals() {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ entries: payload })
+            body: JSON.stringify({
+                entries: payload
+            })
         });
 
         if (!response.ok) {
@@ -534,4 +534,4 @@ async function removeMultipleJournals() {
     }
 }
 
-window.removeMultipleJournals=removeMultipleJournals;
+window.removeMultipleJournals = removeMultipleJournals;

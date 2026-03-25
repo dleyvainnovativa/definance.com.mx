@@ -380,3 +380,4 @@ window.formatBadgeClass=formatBadgeClass;
 window.isMobile=isMobile;
 
 window.getEntryIcon=getEntryIcon;
+
