@@ -68,7 +68,7 @@
                 data-ajax="ajaxRequest">
                 <thead>
                     <tr>
-                        <th data-checkbox="true"></th>
+                        <th data-checkbox="true" data-field="checkbox"></th>
                         <th class="" data-field="entry_date" data-footer-formatter="footerNullText" data-sortable="true">Fecha</th>
                         <th class="" data-field="entry_type_label" data-footer-formatter="footerNullText" data-sortable="true">Tipo</th>
                         <th class="" data-visible=false data-field="debit_account_id" data-footer-formatter="footerNullText" data-sortable="true">ID</th>

@@ -37,6 +37,7 @@ class JournalEntryController extends Controller
                 'debit'  => $results["debit"],
                 'credit' => $results["credit"],
                 'credit_account_code' => "",
+                'checkbox' => "",
                 'entry_date' => "",
                 'entry_type_label' => "",
                 'debit_account_name' => "",
