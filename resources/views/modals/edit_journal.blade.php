@@ -60,7 +60,7 @@
             <div class="modal-footer card-dark border-0 px-4">
                 <a class="btn btn-outline-danger me-auto ms-0" data-bs-dismiss="modal" onclick="removeJournal()">Borrar</a>
                 <a class="btn btn-outline-primary" data-bs-dismiss="modal">Cancelar</a>
-                <button type="submit" class="btn btn-primary me-0">Editar movimiento</button>
+                <button type="submit" class="btn btn-primary me-0">Guardar Cambios</button>
             </div>
         </form>
     </div>

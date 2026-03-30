@@ -199,27 +199,27 @@ class BalanceSheetController extends Controller
                     break;
                 }
             }
-            foreach ($group['codes'] as $code) {
-                if ($code == "300.2" && $flagRemanent == 0) {
-                    $amount = 0;
-                    for ($i = 1; $i <= 12; $i++) {
-                        $amount += IncomeStatementController::getIncomeStatement($userId, $i, $year - 1)["total"];
-                    }
-                    if ($amount != 0) {
+            // foreach ($group['codes'] as $code) {
+            //     if ($code == "300.2" && $flagRemanent == 0) {
+            //         $amount = 0;
+            //         for ($i = 1; $i <= 12; $i++) {
+            //             $amount += IncomeStatementController::getIncomeStatement($userId, $i, $year - 1)["total"];
+            //         }
+            //         if ($amount != 0) {
 
-                        $extraParentAccounts[0] = (object)[
-                            'account_code' => $code,
-                            'account_name' => "DEFICIT O REMANENTE DEL EJERCICIO ANTERIORES", // Use the real name here
-                            'amount' => $amount,
-                            'percent' => 0
-                        ];
-                        $group['total'] += $amount;
-                        $parentAccounts = array_merge($parentAccounts, $extraParentAccounts);
-                    }
+            //             $extraParentAccounts[0] = (object)[
+            //                 'account_code' => $code,
+            //                 'account_name' => "DEFICIT O REMANENTE DEL EJERCICIO ANTERIORES2", // Use the real name here
+            //                 'amount' => $amount,
+            //                 'percent' => 0
+            //             ];
+            //             $group['total'] += $amount;
+            //             $parentAccounts = array_merge($parentAccounts, $extraParentAccounts);
+            //         }
 
-                    break;
-                }
-            }
+            //         break;
+            //     }
+            // }
             $group['data'] = array_values($parentAccounts);
         }
         unset($group);

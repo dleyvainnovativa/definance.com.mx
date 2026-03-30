@@ -283,26 +283,16 @@ class JournalEntryController extends Controller
         $month = self::getMonth($entry_date);
         $year = self::getYear($entry_date);
 
-
-        // if ($entry_type == "opening_balance" || $entry_type == "opening_balance_credit") {
-        //     $accountCredit = DB::table('accounts')->where("user_id", $userId)->where("code", "300.2")->get()->first();
-        //     $credit_account_id = $accountCredit->id;
-        // }
-        // dd($userId, $entry_date, $entry_type, $description, $reference, $amount, $debit_account_id, $credit_account_id);
-        // dd("hola");
-
         self::create($userId, $entry_date, $entry_type, $description, $reference, $amount, $debit_account_id, $credit_account_id);
-        $results = self::setOpening($request->debit_account_id, $request->credit_account_id, $month, $year, $userId);
-        self::setOpening($credit_account_id, $request->debit_account_id, $month, $year, $userId);
+        self::recalculateForward($debit_account_id, $month, $year, $userId);
+        self::recalculateForward($credit_account_id, $month, $year, $userId);
+
+
         self::setCloseAccounts($year, $userId);
         self::setOpeningDeficit($year, $userId);
 
         $results = [];
         return response()->json([$results, $month, $year], 201);
-
-        // return redirect()
-        //     ->back()
-        //     ->with('success', 'Movimiento registrado correctamente');
     }
     public function change(Request $request)
     {
@@ -341,17 +331,23 @@ class JournalEntryController extends Controller
         // dd($debit_account_id, $new_debit, $credit_account_id, $new_credit);
         self::update($entry_id, $userId, $entry_date, $entry_type, $description, $reference, $amount, $new_debit, $new_credit);
 
-        $results = self::setOpening($new_debit, $new_credit, $month, $year, $userId);
-        self::setOpening($new_credit, $new_debit, $month, $year, $userId);
+        self::recalculateForward($new_debit, $month, $year, $userId);
+        self::recalculateForward($new_credit, $month, $year, $userId);
+
         self::setOpeningDeficit($year, $userId);
 
-        $results = self::setOpening($debit_account_id, $credit_account_id, $current_month, $current_year, $userId);
-        self::setOpening($credit_account_id, $debit_account_id, $current_month, $current_year, $userId);
+        if ($new_debit != $debit_account_id) {
+            self::recalculateForward($debit_account_id, $current_month, $current_year, $userId);
+        }
+        if ($new_credit != $credit_account_id) {
+            self::recalculateForward($credit_account_id, $current_month, $current_year, $userId);
+        }
         self::setOpeningDeficit($current_year, $userId);
 
         // // $results = [];
         return response()->json([$results], 201);
     }
+
     public function delete(Request $request)
     {
         $request->validate([
@@ -372,8 +368,8 @@ class JournalEntryController extends Controller
 
         // dd($results);
         self::remove($entry_id, $userId);
-        $results = self::setOpening($debit_account_id, $credit_account_id, $month, $year, $userId);
-        self::setOpening($credit_account_id, $debit_account_id, $month, $year, $userId);
+        self::recalculateForward($debit_account_id, $month, $year, $userId);
+        self::recalculateForward($credit_account_id, $month, $year, $userId);
         self::setOpeningDeficit($year, $userId);
 
         // $results = [];
@@ -399,8 +395,8 @@ class JournalEntryController extends Controller
             $debit_account_id = $result->debit_account_id;
             $credit_account_id = $result->credit_account_id;
             self::remove($entry_id, $userId);
-            self::setOpening($debit_account_id, $credit_account_id, $month, $year, $userId);
-            self::setOpening($credit_account_id, $debit_account_id, $month, $year, $userId);
+            self::recalculateForward($debit_account_id, $month, $year, $userId);
+            self::recalculateForward($credit_account_id, $month, $year, $userId);
             self::setOpeningDeficit($year, $userId);
         }
 
@@ -610,10 +606,8 @@ class JournalEntryController extends Controller
         $account_code = $results->account_code;
         $validation = self::validateOpening($userId, $account_id, $credit_account_id, $month, $year, $nature);
         $prefixes = collect(['400.', '500.', '600.', '700.', '800.', '900.']);
-        // dd($validation, $results, $total);
         $opening_type = $nature == "debit" ? "opening_balance" : "opening_balance_credit";
         $nextDate = $validation["date"];
-        // If Month == 12 and account_id has prefix on $prefixes then $total = 0 
         if ($month == 12 && $prefixes->contains(fn($p) => str_starts_with($account_code, $p))) {
             $total = 0;
         }
@@ -675,8 +669,6 @@ class JournalEntryController extends Controller
                 'opening_balance_credit',
             ]);
         $journal = $query->get();
-        $queryRaw = "select * from `journal` where `user_id` = $userId and (`debit_account_id` = $account_id or `credit_account_id` = $account_id) and month(`entry_date`) = $nextMonth and year(`entry_date`) = $nextYear and `entry_type` in ('opening_balance', 'opening_balance_credit')";
-        // Log::debug('validateOpening', [$userId, $account_id, $credit_account_id, $month, $year, $nextMonth, $nextYear, $journal->isEmpty(), $queryRaw]);
 
         if ($journal->isEmpty()) {
             $validation["new"] = true;
@@ -954,5 +946,127 @@ class JournalEntryController extends Controller
                 }
             }
         }
+    }
+    public static function recalculateForward($account_id, $startMonth, $year, $userId)
+    {
+        $currentMonth = $startMonth;
+        $currentYear = $year;
+
+        // 🔥 Get last REAL movement date (not automatic)
+        $lastDate = self::getLastMovementDate($account_id, $userId);
+
+        if (!$lastDate) return;
+
+        $currentDate = \Carbon\Carbon::create($currentYear, $currentMonth, 1);
+        $endDate = \Carbon\Carbon::parse($lastDate)->startOfMonth();
+
+        $maxIterations = 60; // 🔥 safety (5 years max)
+        $count = 0;
+        Log::debug([
+            "validate recalculate",
+            $lastDate,
+            $account_id,
+            $currentDate->toString(),
+            $endDate->toString(),
+            $currentDate <= $endDate
+        ]);
+        while ($currentDate <= $endDate) {
+
+            if ($count++ > $maxIterations) break;
+
+            $month = $currentDate->month;
+            $year = $currentDate->year;
+
+            $trial = TrialBalanceController::getTrialBalance($userId, $month, $year);
+            $result = $trial->where('op.account_id', $account_id)->first();
+
+            // If no result, still continue (carry forward)
+            $total = $result->total ?? 0;
+            $nature = $result->nature ?? 'debit';
+            $account_code = $result->account_code ?? null;
+
+            $nextDateData = self::validateOpening(
+                $userId,
+                $account_id,
+                null,
+                $month,
+                $year,
+                $nature
+            );
+
+            $nextDate = $nextDateData["date"];
+            $opening_type = $nature == "debit"
+                ? "opening_balance"
+                : "opening_balance_credit";
+
+            // 🔥 Debug AFTER computing month
+            Log::debug([
+                "recalculate",
+                $month,
+                $year,
+                $account_id,
+                $nextDate,
+                $total
+            ]);
+
+            if ($nextDateData["new"]) {
+                self::create(
+                    $userId,
+                    $nextDate,
+                    $opening_type,
+                    "Saldo Inicial Auto",
+                    "automatic",
+                    $total,
+                    $account_id,
+                    null
+                );
+            } else {
+                self::update(
+                    $nextDateData["entry_id"],
+                    $userId,
+                    $nextDate,
+                    $opening_type,
+                    "Saldo Inicial Update",
+                    "automatic",
+                    $total,
+                    $account_id,
+                    null
+                );
+            }
+
+            // 👉 Move to next month
+            $currentDate->addMonth();
+        }
+    }
+
+    public static function getLastMovementDate($account_id, $userId)
+    {
+
+        return DB::table('journal')
+            ->where('user_id', $userId)
+            ->where(function ($query) use ($account_id) {
+                $query->where('debit_account_id', $account_id)
+                    ->orWhere('credit_account_id', $account_id);
+            })
+            ->where(function ($query) {
+                $query->whereNull('reference')
+                    ->orWhere('reference', '!=', 'automatic');
+            })
+            ->max('entry_date');
+    }
+
+    public static function hasMovementsOrOpening($account_id, $month, $year, $userId)
+    {
+
+        return DB::table('journal')
+            ->where('user_id', $userId)
+            ->where(function ($query) use ($account_id) {
+                $query->where('debit_account_id', $account_id)
+                    ->orWhere('credit_account_id', $account_id);
+            })
+            ->whereMonth('entry_date', $month)
+            ->whereYear('entry_date', $year)
+            ->where('reference', '!=', 'automatic')
+            ->exists();
     }
 }
