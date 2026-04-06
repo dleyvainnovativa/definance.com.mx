@@ -14,42 +14,39 @@ class ManagedCashFlowController extends Controller
         $userId = $request->user()->id;
         $month = $request->get('month', now()->month);
         $year = $request->get('year', now()->year);
-        $cash_flow = self::getCashFlow($userId, $month, $year);
+        $details = $request->boolean('details');
 
-        // $fileName = "fea/{$userId}/fea_{$month}_{$year}.json";
-        // if (!Storage::exists($fileName)) {
-        //     $saveFile = [];
-        // } else {
-        //     $content = Storage::get($fileName);
-        //     $saveFile = json_decode($content, true) ?? [];
-        // }
-        // $last_cash_flow = self::getCashFlowTotal($userId, self::getLastMonth($month, $year), self::getLastYear($month, $year));
-        // $month_variation = $cash_flow["total"] - $last_cash_flow;
-        // $cash_flow["total_map"][3]["total"] = $month_variation;
+        $cash_flow = self::getCashFlow($userId, $month, $year, $details);
 
         return response()->json(
             [
                 'save'   => $cash_flow["save"],
                 'data'   => $cash_flow["data"],
                 'cash_accounts'   => $cash_flow["cash_accounts"],
-
-                // 'total' => $month_variation
             ],
         );
     }
-    public static function getCashFlow($userId, $month, $year, $summary = false)
+    public static function getCashFlow($userId, $month, $year, $details = false)
     {
+        $currentFileName = "fea/{$userId}/fea_{$month}_{$year}.json"; // $month = 12;
+        $saveFile = [];
         $savedMonth = $month - 1;
-        $fileName = "fea/{$userId}/fea_{$savedMonth}_{$year}.json";
-        $currentFileName = "fea/{$userId}/fea_{$month}_{$year}.json";
-        // $month = 12;
 
-        if (!Storage::exists($fileName)) {
-            $saveFile = [];
-        } else {
-            $content = Storage::get($fileName);
-            $saveFile = json_decode($content, true) ?? [];
+        for ($i = 1; $i <= $savedMonth; $i++) {
+            $fileName = "fea/{$userId}/fea_{$i}_{$year}.json";
+            if (Storage::exists($fileName)) {
+                $content = Storage::get($fileName);
+                $saveFile = array_merge($saveFile, json_decode($content, true) ?? []);
+            }
         }
+
+        // $fileName = "fea/{$userId}/fea_{$savedMonth}_{$year}.json";
+        // if (!Storage::exists($fileName)) {
+        //     $saveFile = [];
+        // } else {
+        //     $content = Storage::get($fileName);
+        //     $saveFile = json_decode($content, true) ?? [];
+        // }
 
         if (!Storage::exists($currentFileName)) {
             $saveCurrentFile = [];
@@ -77,6 +74,9 @@ class ManagedCashFlowController extends Controller
         $incomeBudget["title"] = "Ingresos Presupuestados";
         $incomeBudget["total_attribute"] = "monthly";
         $incomeBudget["type"] = "debit";
+        $incomeBudget["show_amount_projection"] = false;
+        $incomeBudget["amount_projection"] = 0;
+
         $incomeBudget["total_sum"] = $incomeBudget["total_month"];
         $incomeBudget["description"] = "Total de Ingresos Presupuestados";
         // dd($incomeBudget);
@@ -85,6 +85,7 @@ class ManagedCashFlowController extends Controller
         $projectionAmount = 0;
         foreach ($incomeBudget["data"] as $key => &$incomeData) {
             $incomeData->projection_entry = 0;
+            $incomeData->amount_projection = 0;
             $incomeData->percent_projection = 0;
             foreach ($saveCurrentFile as $key => $save) {
                 if ($save["id"] == $incomeData->account_id) {
@@ -116,6 +117,7 @@ class ManagedCashFlowController extends Controller
                 'projection_manual' => false,
                 'total_attribute' => "total",
                 'manual' => false,
+                'id_stop' => "stop_incomes",
                 'icon' => 'fa-arrow-trend-up',
                 'type'   => 'debit',
                 'title' => 'Efectivo Disponible',
@@ -123,6 +125,8 @@ class ManagedCashFlowController extends Controller
                 'codes' => ['100.1.', '100.2.'],
                 'display' => 'operation',
                 'total' => 0,
+                'show_amount_projection' => false,
+                'amount_projection' => 0,
                 'total_sum' => 0,
                 'total_projection' => 0,
                 'percent' => 0,
@@ -132,7 +136,7 @@ class ManagedCashFlowController extends Controller
                 'key' => 'miscellaneous_debtors_income',
                 'data' => [],
                 'projection_manual' => true,
-                'total_attribute' => "opening",
+                'total_attribute' => "total",
                 'manual' => false,
                 'icon' => 'fa-arrow-trend-down',
                 'type'   => 'debit',
@@ -141,6 +145,8 @@ class ManagedCashFlowController extends Controller
                 'codes' => ['100.5.'],
                 'display' => 'operation',
                 'total' => 0,
+                'show_amount_projection' => true,
+                'amount_projection' => 0,
                 'total_sum' => 0,
                 'total_projection' => 0,
                 'percent' => 0,
@@ -158,6 +164,8 @@ class ManagedCashFlowController extends Controller
                 'codes' => [],
                 'display' => 'operation',
                 'total' => 0,
+                'show_amount_projection' => false,
+                'amount_projection' => 0,
                 'total_sum' => 0,
                 'total_projection' => 0,
                 'percent' => 0,
@@ -179,6 +187,8 @@ class ManagedCashFlowController extends Controller
                 ],
                 'display' => 'total',
                 'total' => 0,
+                'show_amount_projection' => true,
+                'amount_projection' => 0,
                 'total_sum' => 0,
                 'total_projection' => 0,
                 'percent' => 0,
@@ -189,6 +199,7 @@ class ManagedCashFlowController extends Controller
                 'projection_manual' => true,
                 'total_attribute' => "total",
                 'manual' => true,
+                'id_stop' => "stop_expenses",
                 'icon' => 'fa-arrow-trend-down',
                 'type'   => 'credit',
                 'title' => 'Gastos del mes',
@@ -196,6 +207,8 @@ class ManagedCashFlowController extends Controller
                 'codes' => [],
                 'display' => 'operation',
                 'total' => 0,
+                'show_amount_projection' => false,
+                'amount_projection' => 0,
                 'total_sum' => 0,
                 'total_projection' => 0,
                 'percent' => 0,
@@ -213,6 +226,8 @@ class ManagedCashFlowController extends Controller
                 'codes' => ['200.1.'],
                 'display' => 'operation',
                 'total' => 0,
+                'show_amount_projection' => true,
+                'amount_projection' => 0,
                 'total_sum' => 0,
                 'total_projection' => 0,
                 'percent' => 0,
@@ -221,7 +236,7 @@ class ManagedCashFlowController extends Controller
                 'key' => 'bank_expenses',
                 'data' => [],
                 'projection_manual' => true,
-                'total_attribute' => "opening",
+                'total_attribute' => "total",
                 'manual' => false,
                 'icon' => 'fa-arrow-trend-down',
                 'type'   => 'credit',
@@ -230,6 +245,8 @@ class ManagedCashFlowController extends Controller
                 'codes' => ['200.2.'],
                 'display' => 'operation',
                 'total' => 0,
+                'show_amount_projection' => true,
+                'amount_projection' => 0,
                 'total_sum' => 0,
                 'total_projection' => 0,
                 'percent' => 0,
@@ -238,7 +255,7 @@ class ManagedCashFlowController extends Controller
                 'key' => 'car_expenses',
                 'data' => [],
                 'projection_manual' => true,
-                'total_attribute' => "opening",
+                'total_attribute' => "total",
                 'manual' => false,
                 'icon' => 'fa-arrow-trend-down',
                 'type'   => 'credit',
@@ -247,6 +264,8 @@ class ManagedCashFlowController extends Controller
                 'codes' => ['200.3.'],
                 'display' => 'operation',
                 'total' => 0,
+                'show_amount_projection' => true,
+                'amount_projection' => 0,
                 'total_sum' => 0,
                 'total_projection' => 0,
                 'percent' => 0,
@@ -255,7 +274,7 @@ class ManagedCashFlowController extends Controller
                 'key' => 'house_expenses',
                 'data' => [],
                 'projection_manual' => true,
-                'total_attribute' => "opening",
+                'total_attribute' => "total",
                 'manual' => false,
                 'icon' => 'fa-arrow-trend-down',
                 'type'   => 'credit',
@@ -264,6 +283,8 @@ class ManagedCashFlowController extends Controller
                 'codes' => ['200.4.'],
                 'display' => 'operation',
                 'total' => 0,
+                'show_amount_projection' => true,
+                'amount_projection' => 0,
                 'total_sum' => 0,
                 'total_projection' => 0,
                 'percent' => 0,
@@ -272,7 +293,7 @@ class ManagedCashFlowController extends Controller
                 'key' => 'payments_miscellaneous_creditors',
                 'data' => [],
                 'projection_manual' => true,
-                'total_attribute' => "opening",
+                'total_attribute' => "total",
                 'manual' => false,
                 'icon' => 'fa-arrow-trend-down',
                 'type'   => 'credit',
@@ -281,6 +302,8 @@ class ManagedCashFlowController extends Controller
                 'codes' => ['200.5.'],
                 'display' => 'operation',
                 'total' => 0,
+                'show_amount_projection' => true,
+                'amount_projection' => 0,
                 'total_sum' => 0,
                 'total_projection' => 0,
                 'percent' => 0,
@@ -298,6 +321,8 @@ class ManagedCashFlowController extends Controller
                 'codes' => [],
                 'display' => 'operation',
                 'total' => 0,
+                'show_amount_projection' => false,
+                'amount_projection' => 0,
                 'total_sum' => 0,
                 'total_projection' => 0,
                 'percent' => 0,
@@ -315,6 +340,8 @@ class ManagedCashFlowController extends Controller
                 'codes' => [],
                 'display' => 'operation',
                 'total' => 0,
+                'show_amount_projection' => false,
+                'amount_projection' => 0,
                 'total_sum' => 0,
                 'total_projection' => 0,
                 'percent' => 0,
@@ -345,6 +372,8 @@ class ManagedCashFlowController extends Controller
                 ],
                 'display' => 'total',
                 'total' => 0,
+                'show_amount_projection' => true,
+                'amount_projection' => 0,
                 'total_sum' => 0,
                 'total_projection' => 0,
                 'percent' => 0,
@@ -380,6 +409,8 @@ class ManagedCashFlowController extends Controller
                 ],
                 'display' => 'total',
                 'total' => 0,
+                'show_amount_projection' => true,
+                'amount_projection' => 0,
                 'total_sum' => 0,
                 'total_projection' => 0,
                 'percent' => 0,
@@ -418,6 +449,10 @@ class ManagedCashFlowController extends Controller
                         if ($group["projection_manual"] == false) {
                             $projectionAmount = $entry->{$group['total_attribute']};
                         }
+                        // if ($group["show_amount_projection"]) {
+                        $entry->amount_projection = $entry->{$group['total_attribute']};
+                        // dd($entry, $group['total_attribute']);
+                        // }
                         // $projectionAmount = $entry->{$group['total_attribute']};
                         foreach ($saveCurrentFile as $key => $save) {
                             if ($save["id"] == $entry->account_id) {
@@ -431,11 +466,13 @@ class ManagedCashFlowController extends Controller
                             $groupIndex = collect($prefixMap)->keyBy('key');
                             $typeSaved = $groupIndex[$save["key"]]["type"];
 
+                            if ($save["id"] == $entry->account_id && $group["show_amount_projection"]) {
+                                $entry->amount_projection -= $save["projection"];
+                                // dd($entry);
+                            }
+
                             if ($save["cash_account"] == $entry->account_id) {
                                 if ($typeSaved === 'credit') {
-                                    // $group['total'] -= $save["projection"];
-                                    // $amount -= $save["projection"];
-                                    // $total -= $save["projection"];
                                     $entry->projection_entry -= $save["projection"];
                                     $projectionAmount -= $save["projection"];
 
@@ -606,7 +643,16 @@ class ManagedCashFlowController extends Controller
                 continue;
             }
 
+
+
             foreach ($group['data'] as &$row) {
+                // $row->amount_projection = 0;
+                // dd($row);
+                if ((float) $row->{$group['total_attribute']} == 0 && (float)$row->amount_projection == 0 && !$details) {
+                    $row->hidden = true;
+                } else {
+                    $row->hidden = false;
+                }
                 if ($group["type"] == "debit") {
 
                     if ($totalIncomes > 0) {
@@ -646,6 +692,19 @@ class ManagedCashFlowController extends Controller
                 }
             }
         }
+
+        // $group['data'] = array_filter($group['data'], function ($row) use ($group) {
+        //     return (float) $row->{$group['total_attribute']} != 0;
+        // });
+        $debug = [];
+        // foreach ($prefixMap as &$group) {
+        //     if (!isset($group['data']) || empty($group['data'])) {
+        //         continue;
+        //     }
+        //     $group['data'] = array_filter($group['data'], function (&$row) use (&$group) {
+        //         return (float) $row->{$group['total_attribute']} != 0;
+        //     });
+        // }
 
         $groupIndex = collect($prefixMap)->keyBy('key');
         $totalUtility = $groupIndex['other_total']['total'] ?? 0;

@@ -61,6 +61,7 @@
 
         </div>
     </div>
+    @include("modals.calculator")
     @include("components.alert")
     @include("components.popup")
     <script>

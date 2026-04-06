@@ -25,6 +25,43 @@ let api_url = document.querySelector('meta[name="api-url"]').getAttribute('conte
 window.app_url=app_url;
 window.api_url=api_url;
 
+document.addEventListener('DOMContentLoaded', () => {
+
+    const monthSelect = document.getElementById('month-filter');
+    const yearSelect = document.getElementById('year-filter');
+
+    const today = new Date();
+    const currentMonth = today.getMonth() + 1;
+    const currentYear = today.getFullYear();
+
+    // ✅ Set current month
+    if (monthSelect) {
+        monthSelect.value = currentMonth;
+    }
+
+    // ✅ Populate years dynamically (optional but recommended)
+    if (yearSelect) {
+
+        const startYear = currentYear - 5; // range
+        const endYear = currentYear + 1;
+
+        yearSelect.innerHTML = '';
+
+        for (let year = endYear; year >= startYear; year--) {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year;
+
+            if (year === currentYear) {
+                option.selected = true;
+            }
+
+            yearSelect.appendChild(option);
+        }
+    }
+
+});
+
 
 document.addEventListener("DOMContentLoaded", () => {
     const root = document.documentElement;

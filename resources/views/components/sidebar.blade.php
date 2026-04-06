@@ -65,12 +65,7 @@
                     Flujo de Efectivo
                 </small>
             </a>
-            <a href="{{ route('managed_cash_flow') }}" class="list-group-item list-group-item-action {{ request()->routeIs('managed_cash_flow') ? 'active' : '' }}">
-                <small class="text-dark">
-                    <i class="fa-solid fa-money-bill-trend-up text-primary start-icon"></i>
-                    FEA
-                </small>
-            </a>
+
 
             <a href="{{ route('balance_sheet') }}" class="list-group-item list-group-item-action {{ request()->routeIs('balance_sheet') ? 'active' : '' }}">
                 <small class="text-dark">
@@ -87,6 +82,13 @@
 
             <div class="sidebar-section-label text-muted fw-bold">Manual</div>
 
+            <a href="{{ route('managed_cash_flow') }}" class="list-group-item list-group-item-action {{ request()->routeIs('managed_cash_flow') ? 'active' : '' }}">
+                <small class="text-dark">
+                    <i class="fa-solid fa-money-bill-trend-up text-primary start-icon"></i>
+                    FEA
+                </small>
+            </a>
+
             <a href="{{ route('budget') }}" class="list-group-item list-group-item-action {{ request()->routeIs('budget') ? 'active' : '' }}">
                 <small class="text-dark">
                     <i class="fa-solid fa-calendar-plus text-primary start-icon"></i>
@@ -97,6 +99,12 @@
                 <small class="text-dark">
                     <i class="fa-solid fa-calendar-check text-primary start-icon"></i>
                     Presupuesto Mensual
+                </small>
+            </a>
+            <a href="{{ route('cash_count') }}" class="list-group-item list-group-item-action {{ request()->routeIs('cash_count') ? 'active' : '' }}">
+                <small class="text-dark">
+                    <i class="fa-solid fa-money-check-alt text-primary start-icon"></i>
+                    Arqueo
                 </small>
             </a>
             <!-- <a href="{{ route('projections') }}" class="list-group-item list-group-item-action {{ request()->routeIs('projections') ? 'active' : '' }}">

@@ -9,6 +9,9 @@
         <p class="text-muted pb-0 mb-0">Manage your journal entries</p>
     </div>
 </div>
+<div class="fixed-bottom mb-4 text-end pe-4">
+    <button id="save" class="btn btn-primary btn-lg shadow"><i class="fas fa-save"></i></button>
+</div>
 <div class="row g-4 mt-1">
     <div class="col-auto text-start d-none">
         <select class="form-select card-dark border border-dark text-dark" name="month" id="month-filter">
@@ -35,9 +38,9 @@
     <div class="col-auto">
         <button id="refresh" class="btn btn-primary"><i class="fas fa-refresh"></i></button>
     </div>
-    <div class="col-auto">
+    <!-- <div class="col-auto">
         <button id="save" class="btn btn-primary"><i class="fas fa-save"></i></button>
-    </div>
+    </div> -->
     <div class="col-12 text-dark">
         <div class="row g-4" id="cards-header">
             @include("components.loading.cards_header")

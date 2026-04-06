@@ -2,6 +2,9 @@
     <button class="btn btn-dark card-dark border-0" id="sidebarToggle"><i class="fas fa-bars text-dark"></i></button>
 
     <div class="ms-auto d-flex align-items-center gap-3">
+        <a class="btn btn-outline-primary position-relative" data-bs-toggle="modal" data-bs-target="#calculatorModal">
+            <i class="fas fa-calculator"></i>
+        </a>
         <a id="enable-notifications-btn" href="{{route('entry')}}" class="btn btn-outline-primary position-relative" title="Enable Notifications">
             <i class="fas fa-plus"></i>
         </a>

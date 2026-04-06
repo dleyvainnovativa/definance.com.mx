@@ -56,6 +56,9 @@ Route::middleware('firebase.auth')->group(function () {
     Route::get('/budget_monthly', function () {
         return view('pages.budget_monthly');
     })->name("budget_monthly");
+    Route::get('/cash_count', function () {
+        return view('pages.cash_count');
+    })->name("cash_count");
     Route::get('/projections', function () {
         return view('pages.projections');
     })->name("projections");

@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AverageController;
 use App\Http\Controllers\Api\BalanceSheetController;
 use App\Http\Controllers\Api\BudgetController;
 use App\Http\Controllers\Api\BudgetMonthlyController;
+use App\Http\Controllers\API\CashCountController;
 use App\Http\Controllers\Api\CashFlowController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\EntryController;
@@ -46,4 +47,5 @@ Route::middleware('firebase.jwt')->group(function () {
     Route::delete('/entries', [JournalEntryController::class, 'delete'])->name('entries.delete');
     Route::delete('/entries/bulk-delete', [JournalEntryController::class, 'bulkDelete'])->name('entries.bulk-delete');
     Route::post('/entries/import', [JournalEntryController::class, 'import'])->name('entries.import');
+    Route::get('/cash_count', [CashCountController::class, 'index'])->name('api.cash-count');
 });

@@ -123,7 +123,7 @@ class JournalEntryController extends Controller
         }
 
         // --- PASO 4: Paginar y Transformar Filas (misma lógica, datos más simples) ---
-        $entries = $query->orderBy('entry_date', $order)->orderBy('entry_id')->paginate($limit, ['*'], 'page', $page);
+        $entries = $query->orderBy('entry_date', $order)->orderBy('entry_id', $order)->paginate($limit, ['*'], 'page', $page);
         // dd($entries);
 
         $rows = $entries->getCollection()->map(function ($entry) use ($debitAccounts, $creditAccounts) {

@@ -950,3 +950,13 @@ button.gridjs-sort-neutral{
 .theme-switch input:checked + .switch .moon {
     color: var(--primary-color);
 }
+
+.error_cash_account select{
+    border-color: var(--danger-color);
+    background-color: var(--danger-color);
+    color: var(--white-color);
+}
+
+.fixed-bottom{
+    z-index: 998;
+}

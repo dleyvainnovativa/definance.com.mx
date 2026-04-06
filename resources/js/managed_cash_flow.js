@@ -14,8 +14,11 @@ function initRequest() {
 
     const month = document.getElementById('month-filter')?.value;
     const year = document.getElementById('year-filter')?.value;
+    const checkbox = document.getElementById('detailsCheckbox');
+
     if (month) url.searchParams.set('month', month);
     if (year) url.searchParams.set('year', year);
+    url.searchParams.set('details', checkbox.checked ? 'true' : 'false');
 
     fetch(url, {
             headers: { 'Accept': 'application/json', 'Authorization': `Bearer ${token}` }
@@ -27,6 +30,7 @@ function initRequest() {
             globalState.cash_accounts = data.cash_accounts;
             buildHeaderCards(globalState.data);
             buildCards(globalState.data, globalState.cash_accounts, globalState.saved);
+            initObservers();
         })
         .catch((error) => {
             console.error("Failed to fetch initial data:", error);
@@ -54,15 +58,15 @@ function buildHeaderCards(data) {
                             <div class="col-12"><h6 class="text-muted my-0 fw-light">${group.description}</h6></div>
                            <div class="col-auto d-flex flex-column me-2">
                                 <small class="text-muted">Total</small>
-                                <h3 class="${formatTextClass(group.total_sum)} my-0 fw-bold">
+                                <h5 class="${formatTextClass(group.total_sum)} my-0 fw-bold">
                                     ${formatCurrency(group.total_sum)}
-                                </h3>
+                                </h5>
                             </div>
                             <div class="col-auto ms-auto d-flex flex-column">
                                 <small class="text-muted">Total proyectado</small>
-                                <h3 class="${formatTextClass(group.total_projection)} my-0 fw-bold">
+                                <h5 class="${formatTextClass(group.total_projection)} my-0 fw-bold">
                                     ${formatCurrency(group.total_projection)}
-                                </h3>
+                                </h5>
                             </div>
                         </div>
                     </div>
@@ -136,11 +140,8 @@ function addManual(groupKey) {
     const scrollPosition = window.scrollY;
     const manualId = 'manual-' + Date.now();
     const newRecord = { isNew: true, manual_id: manualId, manualId, key: group.key, account_id: null, account_name: "Cuenta Disponible", total: 0, account_code: "MANUAL", percent: 0, percent_projection: 0, opening: 0, debit: 0, credit: 0, projection: 0 };
-    console.log(newRecord);
-    console.log(globalState.saved);
     group.data.push(newRecord);
     globalState.saved.push(newRecord);
-    console.log(globalState.saved);
     buildCards(globalState.data, globalState.cash_accounts, globalState.saved);
     saveDataSilent();
      moveToID(manualId);
@@ -206,12 +207,13 @@ function buildCards(data, cash_accounts, saved_data) {
         let addManualButton = group.manual ? `<button onclick="addManual('${group.key}')" class="btn btn-primary btn-sm"><i class="fas fa-add"></i></button>` : '';
 
         const actionsHeader = group.manual ? `<th class="p-3" data-field="actions"></th>` : '';
-        const projectionHeader = `<th class="p-3 text-end" data-field="projection">Proyección</th>`;
+        const projectionHeader = `<th class="p-3 text-end" data-field="projection">Estimación</th>`;
         const percentTotalHeader = `<th class="p-3 text-end" data-field="percent_projection">P % Total</th>`;
         const cashAccountHeader = group.projection_manual ? `<th class="p-3" data-field="cash_account">Cuenta Efectivo</th>` : '';
+        const amountProjectionHeader = group.show_amount_projection ? `<th class="p-3 text-end" data-field="amount_projection">Saldo Proyectado</th>` : '';
 
         html += `
-            <div class="col-12 grid-item">
+            <div class="col-12 grid-item" id="${group.id_stop ?? null}">
                 <div class="fs-5 fw-bold mb-2">${addManualButton} ${group.title}</div>
                 <div class="row mb-3">
                     <div class="col-12">
@@ -245,6 +247,7 @@ function buildCards(data, cash_accounts, saved_data) {
                                 ${actionsHeader}
                                 <th class="p-3" data-field="account_name">Cuenta</th>
                                 <th class="p-3 text-end" data-field="total">Monto</th>
+                                ${amountProjectionHeader}
                                 <th class="p-3 text-end" data-field="percent">%</th>
                                 ${projectionHeader}
                                 ${percentTotalHeader}
@@ -256,6 +259,7 @@ function buildCards(data, cash_accounts, saved_data) {
             group.data.forEach(row => {
                 let amount = row[group.total_attribute];
                 if (amount === undefined) amount = row['total'] || 0;
+                
 
                 let savedRow = null;
                 if (saved_data) {
@@ -268,12 +272,27 @@ function buildCards(data, cash_accounts, saved_data) {
                 }
 
                 // --- 2. EXTRACT VALUES (MODIFIED TO SUPPORT SYNCED UI TEXT) ---
-                let valTotal = savedRow ? savedRow.total : (row.total !== undefined && row.isNew ? row.total : amount);
+                // let valTotal = savedRow ? savedRow.total : (row.total !== undefined && row.isNew ? row.total : amount);
+                let valTotal = amount;
+                // let valTotal = savedRow ? savedRow[group.total_attribute] : (row[group.total_attribute] !== undefined && row.isNew ? row[group.total_attribute] : 0);
+
                 let valPercProj = savedRow ? savedRow.percent_projection : (row.percent_projection || 0);
                 let valPerc = savedRow ? savedRow.percent : (row.percent || 0);
+
+
+                // if(group.show_amount_projection){
+                //     console.log(row);
+                //     console.log(amount);
+                //     console.log(valTotal);
+                //     console.log(savedRow.total);
+                //     console.log(savedRow);
+                //     console.log(row.total);
+                // }
                 
                 // Fallback priority: 1. Server Save -> 2. Synced UI Typings -> 3. Backend array default
                 let valProj = 0;
+                let valProjAmount = row.amount_projection;
+                
                 if (savedRow) {
                     valProj = savedRow.projection;
                 } else if (row.projection !== undefined) {
@@ -323,10 +342,28 @@ function buildCards(data, cash_accounts, saved_data) {
                     projectionCell = `<td class="text-end">${formatCurrency(valProj)}</td>`;
                 }
 
-                const cashAccountCell = group.projection_manual ? `<td class="text-end">${row_cash_select}</td>` : '';
 
+                const cashAccountCell = group.projection_manual ? `<td class="text-end">${row_cash_select}</td>` : '';
+                const projectionAmountCell = group.show_amount_projection ? `<td class="text-end">${valProjAmount}</td>` : '';
+
+                // html += `
+                //     <tr id="${row.manualId || ''}" data-group-key="${group.key}" 
+                //         data-manual-id="${row.manualId || ''}"
+                //         data-account-id="${row.account_id || ''}"
+                //         data-account-name="${row.account_name || ''}"
+                //         data-account-code="${row.account_code || ''}"
+                //         data-total="${valTotal}">
+                //         ${actionsCell}
+                //         ${nameCell}
+                //         ${totalCell}
+                //         ${percentCell}
+                //         ${projectionCell}
+                //         ${percentTotalCell}
+                //         ${cashAccountCell}
+                //     </tr>`;
+                // console.log(projectionAmountCell);
                 html += `
-                    <tr id="${row.manualId || ''}" data-group-key="${group.key}" 
+                    <tr class="${row.hidden ? 'd-none': ''}" id="${row.manualId || ''}" data-group-key="${group.key}" 
                         data-manual-id="${row.manualId || ''}"
                         data-account-id="${row.account_id || ''}"
                         data-account-name="${row.account_name || ''}"
@@ -335,6 +372,7 @@ function buildCards(data, cash_accounts, saved_data) {
                         ${actionsCell}
                         ${nameCell}
                         ${totalCell}
+                        ${projectionAmountCell}
                         ${percentCell}
                         ${projectionCell}
                         ${percentTotalCell}
@@ -344,7 +382,7 @@ function buildCards(data, cash_accounts, saved_data) {
 
             html += `</tbody></table></div>`;
         } else {
-            html += `<p class="text-muted mb-0">No records for this group.</p>`;
+            html += `<p class="text-muted mb-0">Sin registros para este grupo</p>`;
         }
         html += `</div>`;
     });
@@ -361,9 +399,11 @@ function buildCards(data, cash_accounts, saved_data) {
 // --- 5. Save Functionality ---
 function saveData() {
     const entriesToSave = [];
+    let flag = 0;
     const rows = document.querySelectorAll('tr[data-group-key]');
 
     rows.forEach(row => {
+        row.classList.remove("error_cash_account");
         const groupKey = row.getAttribute('data-group-key');
         const group = globalState.data.find(g => g.key === groupKey);
         if (!group) return;
@@ -385,7 +425,8 @@ function saveData() {
                     manual_id: row.getAttribute('data-manual-id') || '',
                     total: totalInput ? parseFloat(totalInput.value) || 0 : 0,
                     projection: projInput ? parseFloat(projInput.value) || 0 : 0,
-                    code: ""
+                    code: "",
+                    row: row
                 };
             }
         } else if (group.projection_manual) {
@@ -397,11 +438,13 @@ function saveData() {
                 manual_id: row.getAttribute('data-manual-id') || '',
                 total: parseFloat(row.getAttribute('data-total')) || 0,
                 projection: projInput ? parseFloat(projInput.value) || 0 : 0,
-                code: row.getAttribute('data-account-code') || ''
+                code: row.getAttribute('data-account-code') || '',
+                row: row
             };
         }
 
         if (entry) {
+            
             const cashSelect = row.querySelector('.cash-select');
             if (cashSelect) {
                 const selectedVal = cashSelect.value;
@@ -411,47 +454,63 @@ function saveData() {
                     entry.cash_account = null;
                 }
             }
+            if(entry.projection > 0 && entry.cash_account == null){
+                // console.log(entry.row);
+                flag++;
+                showAlert("Cuenta no asignada a Cuenta Efectivo", `La cuenta ${entry.name} no tiene una Cuenta Efectivo asignada` , "", "danger");
+                // return;
+            }
             entriesToSave.push(entry);
         }
     });
 
-    console.log("--- Data to Save ---", entriesToSave);
-
-    let data_url = document.getElementById("data_url_save").value;
-    const month = document.getElementById('month-filter')?.value;
-    const year = document.getElementById('year-filter')?.value || new Date().getFullYear();
-    const token = localStorage.getItem('finance_auth_token');
-    
-    if (!token) return;
-
-    fetch(data_url, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-            month: month,
-            year: year,
-            data: entriesToSave
-        })
-    })
-    .then(res => res.json())
-    .then(res => {
-        console.log(res);
-        if(typeof showAlert === "function") showAlert("Archivo guardado", "Se han actualizado correctamente los datos", "", "success");
-        initRequest(); // Resync state with backend
-    })
-    .catch(err => {
-        console.error(err);
-        if(typeof showAlert === "function") showAlert("Ha ocurrido un error", "No se han actualizado correctamente los datos, intente de nuevo", "", "danger");
+    entriesToSave.forEach(entry => {
+        if(entry.projection > 0 && entry.cash_account == null){
+            console.log(entry.row);
+            entry.row.classList.add("error_cash_account");
+        }
     });
+
+    if(flag == 0){
+        console.log("--- Data to Save ---", entriesToSave);
+
+
+        let data_url = document.getElementById("data_url_save").value;
+        const month = document.getElementById('month-filter')?.value;
+        const year = document.getElementById('year-filter')?.value || new Date().getFullYear();
+        const token = localStorage.getItem('finance_auth_token');
+        
+        if (!token) return;
+
+        fetch(data_url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                month: month,
+                year: year,
+                data: entriesToSave
+            })
+        })
+        .then(res => res.json())
+        .then(res => {
+            if(typeof showAlert === "function") showAlert("Archivo guardado", "Se han actualizado correctamente los datos", "", "success");
+            initRequest(); // Resync state with backend
+        })
+        .catch(err => {
+            console.error(err);
+            if(typeof showAlert === "function") showAlert("Ha ocurrido un error", "No se han actualizado correctamente los datos, intente de nuevo", "", "danger");
+        });
+    }
 }
 
 // --- 5. Save Functionality ---
 function saveDataSilent() {
     const entriesToSave = [];
     const rows = document.querySelectorAll('tr[data-group-key]');
+    let flag = 0;
 
     rows.forEach(row => {
         const groupKey = row.getAttribute('data-group-key');
@@ -492,6 +551,7 @@ function saveDataSilent() {
         }
 
         if (entry) {
+            console.log(entry);
             const cashSelect = row.querySelector('.cash-select');
             if (cashSelect) {
                 const selectedVal = cashSelect.value;
@@ -501,9 +561,17 @@ function saveDataSilent() {
                     entry.cash_account = null;
                 }
             }
+            if(entry.projection > 0 && entry.cash_account == null){
+                console.log(entry);
+                flag++;
+                showAlert("Cuenta no asignada a Cuenta Efectivo", `La cuenta ${entry.name} no tiene una Cuenta Efectivo asignada` , "", "danger");
+                return;
+            }
             entriesToSave.push(entry);
         }
     });
+
+    if(flag == 0){
 
 
     let data_url = document.getElementById("data_url_save").value;
@@ -533,14 +601,93 @@ function saveDataSilent() {
         // console.error(err);
         // if(typeof showAlert === "function") showAlert("Ha ocurrido un error", "No se han actualizado correctamente los datos, intente de nuevo", "", "danger");
     });
+    }
+
 }
 
 // --- 6. Event Listeners & Helpers ---
 document.addEventListener('DOMContentLoaded', function() {
-    $('#month-filter, #year-filter').on('change', initRequest);
+    $('#month-filter, #year-filter, #detailsCheckbox').on('change', initRequest);
     document.getElementById("refresh").addEventListener("click", initRequest);
     document.getElementById("save").addEventListener("click", saveData);
 });
 
 window.addManual = addManual;
 window.deleteManual = deleteManual;
+
+
+function initObservers() {
+    const cardsHeader = document.getElementById('cards-header');
+    const floatingHeader = document.getElementById('floating-header');
+    const floatingContent = document.getElementById('floating-content');
+    const footerCard = document.getElementById('footer-card');
+    footerCard.innerHTML="";
+    const firstCard = cardsHeader.children[0];
+    const secondCard = cardsHeader.children[1];
+    const thirdCard = cardsHeader.children[2].cloneNode(true);
+    thirdCard.className = "col-12"
+
+    footerCard.appendChild(thirdCard);
+
+    const stopIncomes = document.getElementById('stop_incomes');
+    const stopExpenses = document.getElementById('stop_expenses');
+
+    if (!stopIncomes || !stopExpenses) return;
+
+    // HEADER OBSERVER
+    const headerObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+
+        const rect = entry.boundingClientRect;
+
+        // Only hide if header is still below sticky line
+        if (rect.bottom > 60) {
+            floatingHeader.classList.add('d-none');
+        } else {
+            floatingHeader.classList.remove('d-none');
+        }
+
+    });
+}, {
+    threshold: 0,
+    rootMargin: '-60px 0px 0px 0px'
+});
+
+    headerObserver.observe(cardsHeader);
+
+    // SECTION OBSERVER
+    const sectionObserver = new IntersectionObserver((entries) => {
+
+    let visibleEntry = entries.find(entry => entry.isIntersecting);
+
+    if (!visibleEntry) return;
+
+    floatingContent.innerHTML = '';
+
+    if (visibleEntry.target.id === 'stop_incomes') {
+        floatingContent.appendChild(prepareCard(firstCard));
+    }
+
+    if (visibleEntry.target.id === 'stop_expenses') {
+        floatingContent.appendChild(prepareCard(secondCard));
+    }
+
+}, {
+    root: null,
+    threshold: 0,
+    rootMargin: '-60px 0px -90% 0px'
+});
+
+    sectionObserver.observe(stopIncomes);
+    sectionObserver.observe(stopExpenses);
+}
+
+function prepareCard(card) {
+    const clone = card.cloneNode(true);
+
+    clone.className = 'col-12';
+    clone.querySelector(".card").classList.add("shadow");
+
+    return clone;
+}
+
