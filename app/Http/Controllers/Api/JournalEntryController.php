@@ -280,6 +280,18 @@ class JournalEntryController extends Controller
         $debit_account_id = $request->debit_account_id;
         $credit_account_id = $request->credit_account_id;
 
+        switch ($entry_type) {
+            case 'opening_balance':
+                $entry_type = "income";
+                break;
+            case 'opening_balance_credit':
+                $entry_type = "expense";
+                break;
+
+            default:
+                break;
+        }
+
 
         $month = self::getMonth($entry_date);
         $year = self::getYear($entry_date);

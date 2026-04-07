@@ -261,7 +261,7 @@ class BalanceSheetController extends Controller
                 }
                 if (!empty($dividedKey)) {
                     $groupedCalculated = $groupIndex[$dividedKey]['total'];
-                    if ($entry->amount > 0 && $totalGroup > 0) {
+                    if ($entry->amount > 0 && $groupedCalculated > 0) {
                         $entry->percent_group = round(($entry->amount / $groupedCalculated) * 100, 2);
                     } else {
                         $entry->percent_group = 0;

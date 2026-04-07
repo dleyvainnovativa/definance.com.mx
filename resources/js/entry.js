@@ -96,6 +96,12 @@
             // Re-populate the credit choices, but mark the selected debit account as disabled
             populateChoices(creditChoices, allAccounts, selectedDebitId);
             creditChoices.enable(); 
+        }else{
+            const filteredAccounts = allAccounts
+    .filter(acc => acc.code?.startsWith('300.'))
+    .reverse();
+            populateChoices(creditChoices, filteredAccounts);
+            creditChoices.enable();
         }
     });
 

@@ -22,8 +22,8 @@
                         <option value="expense">EGRESO</option>
                         <option value="transfer">TRASPASO</option>
                         <option value="asset_acquisition">ADQUISICIÓN ACT. FIJO</option>
-                        <option value="income">SALDO INICIAL CUENTA DEUDORA</option>
-                        <option value="expense">SALDO INICIAL CUENTA ACREEDORA</option>
+                        <option value="opening_balance">SALDO INICIAL CUENTA DEUDORA</option>
+                        <option value="opening_balance_credit">SALDO INICIAL CUENTA ACREEDORA</option>
                     </select>
                 </div>
                 <div class="col-md-6">
