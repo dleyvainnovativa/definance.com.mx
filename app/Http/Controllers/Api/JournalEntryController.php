@@ -362,6 +362,7 @@ class JournalEntryController extends Controller
                 ], 500);
             }
         }
+        $amount = abs($amount);
 
 
 

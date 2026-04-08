@@ -59,7 +59,7 @@ class BalanceSheetController extends Controller
                 'data' => [],
                 'icon' => 'fa-landmark',               // Total assets = balance sheet strength
                 'type'   => 'total',
-                'title' => 'TOTAL ACTIVOS FIJOS',
+                'title' => 'TOTAL ACTIVOS',
                 'description' => 'Activos + Activos Fijos',
                 'codes' => ['100.', '110.'],
                 'calculate' => [
