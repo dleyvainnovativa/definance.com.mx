@@ -1004,11 +1004,11 @@ class JournalEntryController extends Controller
         // Special cases
         if ($reference === 'm_opening_balance') {
             if ($type === 'income') {
-                return 'Ingreso (Saldo Inicial Cuenta Deudora)';
+                return 'Saldo Inicial Cuenta Deudora';
             }
 
             if ($type === 'expense') {
-                return 'Gasto (Saldo Inicial Cuenta Acreedora)';
+                return 'Saldo Inicial Cuenta Acreedora';
             }
         }
 
