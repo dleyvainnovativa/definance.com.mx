@@ -75,7 +75,14 @@
 
     function calculate() {
         try {
-            display.value = eval(display.value);
+
+            let expression = display.value;
+
+            // Convert percentages
+            expression = expression.replace(/(\d+(\.\d+)?)%/g, '($1/100)');
+
+            display.value = eval(expression);
+
         } catch {
             display.value = 'Error';
         }

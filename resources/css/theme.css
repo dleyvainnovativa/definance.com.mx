@@ -964,7 +964,7 @@ button.gridjs-sort-neutral{
     cursor: move;
 }
 
-.blur-sensitive .text-muted, .blur-sensitive .text-success {
+.blur-sensitive .text-muted, .blur-sensitive .text-success,  .blur-sensitive .text-danger  {
     filter: blur(10px);
     user-select: none;
     transition: filter .2s ease;
