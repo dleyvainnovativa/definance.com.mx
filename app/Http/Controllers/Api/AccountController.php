@@ -29,12 +29,33 @@ class AccountController extends Controller
                     ->orWhere('code', 'like', "%{$search}%");
             });
         }
-        $entries =
-            // $query->orderBy('code')
-            $query->orderByRaw("
+        //         $entries =
+        //             // $query->orderBy('code')
+        //             $query->orderByRaw("
+        //     CAST(SUBSTRING_INDEX(code, '.', 1) AS UNSIGNED),
+        //     CAST(IFNULL(NULLIF(SUBSTRING_INDEX(SUBSTRING_INDEX(code, '.', 2), '.', -1), code), 0) AS UNSIGNED),
+        //     CAST(IFNULL(NULLIF(SUBSTRING_INDEX(code, '.', 3), code), 0) AS UNSIGNED)
+        // ")
+        $entries = $query->orderByRaw("
     CAST(SUBSTRING_INDEX(code, '.', 1) AS UNSIGNED),
-    CAST(IFNULL(NULLIF(SUBSTRING_INDEX(SUBSTRING_INDEX(code, '.', 2), '.', -1), code), 0) AS UNSIGNED),
-    CAST(IFNULL(NULLIF(SUBSTRING_INDEX(code, '.', 3), code), 0) AS UNSIGNED)
+    CAST(
+        CASE
+            WHEN code LIKE '%.%' THEN
+                SUBSTRING_INDEX(
+                    SUBSTRING_INDEX(code, '.', 2),
+                    '.',
+                    -1
+                )
+            ELSE 0
+        END AS UNSIGNED
+    ),
+    CAST(
+        CASE
+            WHEN code LIKE '%.%.%' THEN
+                SUBSTRING_INDEX(code, '.', -1)
+            ELSE 0
+        END AS UNSIGNED
+    )
 ")
 
             ->paginate($limit, ['*'], 'page', $page);

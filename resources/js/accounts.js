@@ -120,7 +120,7 @@ function actionsFormatter(value, row) {
         edit = `
 <button
     class="btn btn-outline-primary"
-    onclick="editAccount(${value}, '${row.name}')"
+    onclick='editAccount(${value}, ${JSON.stringify(row.name)})'
     title="Editar cuenta">
     <i class="fa-solid fa-pen"></i>
 </button>
@@ -130,7 +130,7 @@ function actionsFormatter(value, row) {
         remove = `
      <button
         class="btn btn-outline-danger"
-        onclick="removeAccount(${value},'${row.name}')"
+            onclick='removeAccount(${value}, ${JSON.stringify(row.name)})'
         title="Eliminar cuenta">
         <i class="fa-solid fa-trash"></i>
     </button>
@@ -365,8 +365,8 @@ window.customViewFormatter = data => {
         let edit = ``;
         let remove = ``;
 
-        edit = `onclick="editAccount(${row.id}, '${row.name}')"`;
-        remove = `onclick="removeAccount(${row.id},'${row.name}')"`;
+        edit = `onclick='editAccount(${value}, ${JSON.stringify(row.name)})'`;
+        remove = `onclick='removeAccount(${value}, ${JSON.stringify(row.name)})'`;
         view += template
             .replace('%id%', row.id)
             .replace('%icon%', getEntryIcon(row.type))

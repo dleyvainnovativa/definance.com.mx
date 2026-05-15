@@ -58,7 +58,9 @@ class AuthController extends Controller
                     ]);
                 }
             }
-            self::suspiciousLogin($request, $user);
+            if ($_ENV['APP_ENV'] === 'production') {
+                self::suspiciousLogin($request, $user);
+            }
 
             session([
                 'firebase_uid' => $firebaseUid,
