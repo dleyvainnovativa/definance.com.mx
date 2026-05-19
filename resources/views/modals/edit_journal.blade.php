@@ -17,11 +17,13 @@
                     <input type="hidden" name="journal_entry_id" id="journal_entry_id">
                     <!-- Entry date -->
                     <div class="col-md-6">
-                        <label class="form-label">Forma de Pago</label>
+                        <label class="form-label mb-0"><i class="fas fa-wallet text-muted me-2"></i><span id="from_title">Cuenta Origen</span></label>
+                        <div id="from_description" class="form-text text-muted mb-2"></div>
                         <select name="debit_account_id" id="journal_debit_account_id" class="form-select" required></select>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Cuenta Abono</label>
+                        <label class="form-label mb-0"><i class="fas fa-money-bill-transfer text-muted me-2"></i><span id="to_title">Cuenta Destino</span></label>
+                        <div id="to_description" class="form-text text-muted mb-2"></div>
                         <select name="credit_account_id" id="journal_credit_account_id" class="form-select"></select>
                     </div>
 
@@ -39,8 +41,10 @@
                             <option value="expense">EGRESO</option>
                             <option value="transfer">TRASPASO</option>
                             <option value="asset_acquisition">ADQUISICIÓN ACT. FIJO</option>
-                            <option value="income">SALDO INICIAL CUENTA DEUDORA</option>
-                            <option value="expense">SALDO INICIAL CUENTA ACREEDORA</option>
+                            <!-- <option value="income">SALDO INICIAL CUENTA DEUDORA</option> -->
+                            <!-- <option value="expense">SALDO INICIAL CUENTA ACREEDORA</option> -->
+                            <option value="opening_balance">SALDO INICIAL CUENTA DEUDORA</option>
+                            <option value="opening_balance_credit">SALDO INICIAL CUENTA ACREEDORA</option>
                         </select>
                     </div>
 

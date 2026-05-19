@@ -35,11 +35,11 @@ class DashboardController extends Controller
             ->get()->toArray();
 
         $debitAccountGroups = [
-            '100.1.' => 'EFECTIVO Y BANCOS',
-            '100.2.' => 'INVERSIONES',
-            '100.3.' => 'CUENTAS DE AHORRO',
-            '100.4.' => 'DEUDORES DIVERSOS',
-            '100.5.' => 'OTROS',
+            '100.1.' => 'EFECTIVO',
+            '100.2.' => 'BANCOS',
+            '100.3.' => 'INVERSIONES',
+            '100.4.' => 'CUENTAS DE AHORRO',
+            '100.5.' => 'DEUDORES DIVERSOS',
         ];
         $creditAccountGroups = [
             '200.1.' => 'TARJETAS CREDITO',

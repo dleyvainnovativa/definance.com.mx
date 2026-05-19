@@ -38,7 +38,7 @@
     });
 
     // 2. Fetch data ONCE and store it
-    function initRequest() {
+    function initRequestEntry() {
         const token = localStorage.getItem('finance_auth_token');
         if (!token) return;
 
@@ -56,6 +56,10 @@
         .catch(error => console.error(error));
     }
 
+    let from_title = document.getElementById('from_title');
+    let from_description = document.getElementById('from_description');
+    let to_title = document.getElementById('to_title');
+    let to_description = document.getElementById('to_description');
     // 3. Handle Workflow Changes (entry_type select)
     typeSelect.addEventListener('change', (e) => {
         const type = e.target.value;
@@ -64,6 +68,48 @@
         debitChoices.clearStore();
         creditChoices.clearStore();
         creditChoices.disable(); // Always start credit as disabled on type change
+
+        switch (type) {
+            case "income":
+                from_title.textContent = "Cuenta que Recibe";
+                from_description.textContent = "Elige la cuenta o caja donde recibiras este ingreso";
+                to_title.textContent = "Tipo de Ingreso";
+                to_description.textContent = "Selecciona la cuenta motivo del ingreso";
+                break;
+            case "expense":
+                from_title.textContent = "Cuenta que Paga";
+                from_description.textContent = "Elige la cuenta o caja que realizara este pago";
+                to_title.textContent = "Tipo de Gasto";
+                to_description.textContent = "Selecciona la cuenta motivo del egreso";
+                break;
+            case "transfer":
+                from_title.textContent = "Cuenta Destino";
+                from_description.textContent = "Elige la cuenta o caja que recibe el dinero";
+                to_title.textContent = "Cuenta Origen";
+                to_description.textContent = "Elige la cuenta o caja de donde sale el dinero";
+                break;
+            case "asset_acquisition":
+                from_title.textContent = "Activo Adquirido";
+                from_description.textContent = "ㅤ";
+                to_title.textContent = "Cuenta que Paga";
+                to_description.textContent = "Selecciona la cuenta con la que pagaste el activo adquirido";
+                break;
+            case "opening_balance":
+                from_title.textContent = "Seleccione Cuenta";
+                from_description.textContent = "";
+                to_title.textContent = "Saldo Inicial";
+                to_description.textContent = "";
+                break;
+            case "opening_balance_credit":
+                from_title.textContent = "Seleccione Cuenta";
+                from_description.textContent = "";
+                to_title.textContent = "Saldo Inicial";
+                to_description.textContent = "";
+                break;
+        
+            default:
+                break;
+        }
 
         if (['income', 'expense', 'transfer', 'asset_acquisition'].includes(type)) {
             // NORMAL WORKFLOW
@@ -96,12 +142,16 @@
             // Re-populate the credit choices, but mark the selected debit account as disabled
             populateChoices(creditChoices, allAccounts, selectedDebitId);
             creditChoices.enable(); 
-        }else{
+        } else {
+            creditChoices.clearStore();
             const filteredAccounts = allAccounts
-    .filter(acc => acc.code?.startsWith('300.'))
-    .reverse();
+                .filter(acc => acc.code?.startsWith('300.'))
+            // .reverse();
             populateChoices(creditChoices, filteredAccounts);
             creditChoices.enable();
+            if (filteredAccounts.length > 0) {
+                creditChoices.setChoiceByValue(filteredAccounts[0].id);
+            }
         }
     });
 
@@ -179,6 +229,8 @@
     }
 
     // Trigger initial load
-    initRequest();
+    initRequestEntry();
+    window.initRequestEntry=initRequestEntry;
 
 })();
+

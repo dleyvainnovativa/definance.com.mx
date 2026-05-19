@@ -35,19 +35,23 @@
                     <input name="description" class="form-control card-dark border border-dark text-dark" required>
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Forma de Pago</label>
+                    <label class="form-label mb-0"><i class="fas fa-wallet text-muted me-2"></i><span id="from_title">Cuenta Origen</span></label>
+                    <div id="from_description" class="form-text text-muted mb-2"></div>
                     <select name="debit_account_id" id="debit_account_id" class="form-select" required disabled></select>
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Cuenta Abono</label>
+                    <label class="form-label mb-0"><i class="fas fa-money-bill-transfer text-muted me-2"></i><span id="to_title">Cuenta Destino</span></label>
+                    <div id="to_description" class="form-text text-muted mb-2"></div>
                     <select name="credit_account_id" id="credit_account_id" class="form-select" disabled></select>
                 </div>
                 <div class="col-12 text-end">
+                    <a class="btn btn-secondary" href="#" data-bs-toggle="modal" data-bs-target="#accountModal">Crear Cuenta</a>
                     <button type="submit" class="btn btn-primary">Guardar Movimiento</button>
                 </div>
             </div>
         </form>
     </div>
 </div>
-@vite(["resources/js/entry.js"])
+@include("modals.add_account")
+@vite(["resources/js/entry.js", "resources/js/external_account.js"])
 @endsection

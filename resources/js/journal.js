@@ -4,7 +4,10 @@ const debitSelect = document.getElementById('journal_debit_account_id');
 const creditSelect = document.getElementById('journal_credit_account_id');
 (() => {
     'use strict'
-
+let from_title = document.getElementById('from_title');
+    let from_description = document.getElementById('from_description');
+    let to_title = document.getElementById('to_title');
+    let to_description = document.getElementById('to_description');
 
     const typeSelect = document.getElementById('journal_entry_type');
     debitChoices = new Choices(debitSelect, {
@@ -73,6 +76,48 @@ const creditSelect = document.getElementById('journal_credit_account_id');
         creditChoices.clearStore();
         creditChoices.disable(); // Always start credit as disabled on type change
 
+        switch (type) {
+            case "income":
+                from_title.textContent = "Cuenta que Recibe";
+                from_description.textContent = "Elige la cuenta o caja donde recibiras este ingreso";
+                to_title.textContent = "Tipo de Ingreso";
+                to_description.textContent = "Selecciona la cuenta motivo del ingreso";
+                break;
+            case "expense":
+                from_title.textContent = "Cuenta que Paga";
+                from_description.textContent = "Elige la cuenta o caja que realizara este pago";
+                to_title.textContent = "Tipo de Gasto";
+                to_description.textContent = "Selecciona la cuenta motivo del egreso";
+                break;
+            case "transfer":
+                from_title.textContent = "Cuenta Destino";
+                from_description.textContent = "Elige la cuenta o caja que recibe el dinero";
+                to_title.textContent = "Cuenta Origen";
+                to_description.textContent = "Elige la cuenta o caja de donde sale el dinero";
+                break;
+            case "asset_acquisition":
+                from_title.textContent = "Activo Adquirido";
+                from_description.textContent = "ㅤ";
+                to_title.textContent = "Cuenta que Paga";
+                to_description.textContent = "Selecciona la cuenta con la que pagaste el activo adquirido";
+                break;
+            case "opening_balance":
+                from_title.textContent = "Seleccione Cuenta";
+                from_description.textContent = "";
+                to_title.textContent = "Saldo Inicial";
+                to_description.textContent = "";
+                break;
+            case "opening_balance_credit":
+                from_title.textContent = "Seleccione Cuenta";
+                from_description.textContent = "";
+                to_title.textContent = "Saldo Inicial";
+                to_description.textContent = "";
+                break;
+        
+            default:
+                break;
+        }
+
         if (['income', 'expense', 'transfer', 'asset_acquisition'].includes(type)) {
             // NORMAL WORKFLOW
             populateChoices(debitChoices, allAccounts);
@@ -96,13 +141,25 @@ const creditSelect = document.getElementById('journal_credit_account_id');
     // 4. Handle cross-disabling for normal workflow
     debitSelect.addEventListener('change', (e) => {
         const currentType = typeSelect.value;
-
+        console.log(currentType);
         // Only apply this cross-disabling logic to the normal workflows
         if (['income', 'expense', 'transfer', 'asset_acquisition'].includes(currentType)) {
             const selectedDebitId = e.detail.value; // Get selected value from Choices.js event
 
             populateChoices(creditChoices, allAccounts, selectedDebitId);
             creditChoices.enable();
+        } else {
+            console.log("movimiento de apertura seleccionado, no se aplica lógica de deshabilitado cruzado");
+            creditChoices.clearStore();
+            const filteredAccounts = allAccounts
+                .filter(acc => acc.code?.startsWith('300.'))
+            // .reverse();
+            populateChoices(creditChoices, filteredAccounts);
+            creditChoices.enable();
+            console.log(filteredAccounts);
+            if (filteredAccounts.length > 0) {
+                creditChoices.setChoiceByValue(filteredAccounts[0].id);
+            }
         }
     });
 
