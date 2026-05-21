@@ -3,12 +3,12 @@
      --sidebar-width: 260px;
     --sidebar-width-toggled: -260px;
     --header-height: 60px;
-     --bs-primary-rgb: 66, 130, 82;       /* Gold */
+     --bs-primary-rgb: 242, 113, 113;       /* Gold */
     --bs-secondary-rgb: 94, 100, 104;      /* Dark red */
     /* --bs-dark-rgb: 15, 15, 15;   */
     --bs-primary-bg-subtle: #c9d9cd;
     --bs-dark-rgb: 13,13,18;
-    --primary-color: #428252;
+    --primary-color: #F27171;
     /* --primary-color: rgb(66, 130, 82); */
     --dark-color: #0d0d12;
     /* --dark-color: #0d0d12; */
@@ -18,7 +18,7 @@
     --white-color: #ffffff;
     --success-color: #198754;
     --danger-color: #dc3545;
-    --primary-color-hover: #2f5b3a;
+    --primary-color-hover: #df6868;
     --primary-color-subtle: rgba(66, 130, 82, 0.15);
     --light-color-hover: #e0e0e0;
     --secondary-color: #8b8b8b;
@@ -34,12 +34,12 @@
     
 }
 .theme-light { 
-     --bs-primary-rgb: 49, 98, 61;       /* Gold */
+     --bs-primary-rgb: 242, 113, 113;       /* Gold */
     --bs-secondary-rgb: 94, 100, 104;      /* Dark red */
     /* --bs-dark-rgb: 15, 15, 15;   */
     --bs-primary-bg-subtle: #31623d1e;
     --bs-dark-rgb: 248, 244, 245;
-    --primary-color: #31623d;
+    --primary-color: #F27171;
     --dark-color: #f8f4f5;
     --dark-color: rgb(248, 244, 245);
     --dark-color-hover: rgb(248, 244, 245);
@@ -51,10 +51,10 @@
     --white-color: #ffffff;
     --success-color: #198754;
     --danger-color: #dc3545;
-    --primary-color-hover: #254a2e;
+    --primary-color-hover: #df6868;
     --primary-color-subtle: rgba(201, 162, 39, 0.15);
     --light-color-hover: #e0e0e0;
-    --secondary-color: #c5c5c5;
+    --secondary-color: #F9B481;
     --option-color: #3b82f6;
     --secondary-color-hover: #b1b1b1;
     --bs-nav-pills-link-active-bg: var(--primary-color);

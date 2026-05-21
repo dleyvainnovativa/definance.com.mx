@@ -18,7 +18,7 @@
                         <div style="padding:24px 24px 8px 24px;text-align:left">
                             <img
                                 alt=""
-                                src="https://definance.com.mx/img/logo2.png"
+                                src="https://definance.com.mx/img/logo.png"
                                 height="100"
                                 style="height:100px;outline:none;border:none;text-decoration:none;vertical-align:middle;display:inline-block;max-width:100%" />
                         </div>

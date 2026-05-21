@@ -49,7 +49,7 @@
             <!-- Panel izquierdo -->
             <div class="col-lg-6 text-bg-dark marketing-panel d-none d-lg-flex flex-column justify-content-between p-5">
                 <div class="d-flex align-items-center gap-3">
-                    <img src="{{asset('img/logo2.png')}}" width="160" alt="">
+                    <img src="{{asset('img/logo.png')}}" width="240" alt="">
 
                 </div>
 
@@ -76,7 +76,7 @@
                 <div class="container col-lg-8 col-xl-6 col-12">
 
                     <div class="text-center d-lg-none mb-2">
-                        <img src="{{asset('img/icon.png')}}" width="140" alt="">
+                        <img src="{{asset('img/icon.png')}}" width="90" alt="">
 
                     </div>
 
