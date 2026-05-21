@@ -7,12 +7,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <title>@yield('title', env('APP_NAME').' | LandingPage')</title>
     <meta name="description" content="@yield('description',  env('APP_NAME').' | LandingPage')">
-    <link rel="icon" type="image/png" href="{{ asset('img/icon/favicon-96x96.png')}}" sizes="96x96" />
-    <link rel="icon" type="image/svg+xml" href="{{ asset('img/icon/favicon.svg')}}" />
-    <link rel="shortcut icon" href="{{ asset('img/icon/favicon.ico')}}" />
-    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('img/icon/apple-touch-icon.png')}}" />
+    <link rel="icon" type="image/png" href="{{ asset('img/icon/favicon-96x96.png')}}?v={{ time() }}" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="{{ asset('img/icon/favicon.svg')}}?v={{ time() }}" />
+    <link rel="shortcut icon" href="{{ asset('img/icon/favicon.ico')}}?v={{ time() }}" />
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('img/icon/apple-touch-icon.png')}}?v={{ time() }}" />
     <meta name="apple-mobile-web-app-title" content="{{ env('APP_NAME')}}" />
-    <link rel="manifest" href="{{ asset('img/icon/site.webmanifest')}}" />
+    <link rel="manifest" href="{{ asset('img/icon/site.webmanifest')}}?v={{ time() }}" />
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="app-url" content="{{route('home')}}/">
     <meta name="api-url" content="{{route('api')}}/">

@@ -1,6 +1,6 @@
 <div id="sidebar-wrapper" class="border border-dark card-dark sidebar safe-area">
     <div class="sidebar-heading text-primary text-center">
-        <img class="text-center" src="{{asset('img/logo.png')}}" width="140" alt="">
+        <img class="text-center" src="{{asset('img/logo.png')}}?v={{ time() }}" width="140" alt="">
     </div>
     <div class="d-flex flex-column vh-100 pb-5">
         <!-- <div class="list-group list-group-flush overflow-auto pb-5 flex-shrink-0" style="height:-webkit-fill-available;"> -->

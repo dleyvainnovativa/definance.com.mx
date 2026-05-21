@@ -6,12 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <title>@yield('title', env('APP_NAME').' | Panel')</title>
     <meta name="description" content="@yield('description',  env('APP_NAME').' | Panel')">
-    <link rel="icon" type="image/png" href="{{ asset('img/icon/favicon-96x96.png')}}" sizes="96x96" />
-    <link rel="icon" type="image/svg+xml" href="{{ asset('img/icon/favicon.svg')}}" />
-    <link rel="shortcut icon" href="{{ asset('img/icon/favicon.ico')}}" />
-    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('img/icon/apple-touch-icon.png')}}" />
+    <link rel="icon" type="image/png" href="{{ asset('img/icon/favicon-96x96.png')}}?v={{ time() }}" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="{{ asset('img/icon/favicon.svg')}}?v={{ time() }}" />
+    <link rel="shortcut icon" href="{{ asset('img/icon/favicon.ico')}}?v={{ time() }}" />
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('img/icon/apple-touch-icon.png')}}?v={{ time() }}" />
     <meta name="apple-mobile-web-app-title" content="{{ env('APP_NAME')}}" />
-    <link rel="manifest" href="{{ asset('img/icon/site.webmanifest')}}" />
+    <link rel="manifest" href="{{ asset('img/icon/site.webmanifest')}}?v={{ time() }}" />
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="white-translucent" media="(prefers-color-scheme: light)">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" media="(prefers-color-scheme: dark)">
@@ -49,7 +49,7 @@
             <!-- Panel izquierdo -->
             <div class="col-lg-6 text-bg-dark marketing-panel d-none d-lg-flex flex-column justify-content-between p-5">
                 <div class="d-flex align-items-center gap-3">
-                    <img src="{{asset('img/logo.png')}}" width="240" alt="">
+                    <img src="{{asset('img/logo.png')}}?v={{ time() }}" width="240" alt="">
 
                 </div>
 
@@ -76,7 +76,7 @@
                 <div class="container col-lg-8 col-xl-6 col-12">
 
                     <div class="text-center d-lg-none mb-2">
-                        <img src="{{asset('img/icon.png')}}" width="90" alt="">
+                        <img src="{{asset('img/icon.png')}}?v={{ time() }}" width="90" alt="">
 
                     </div>
 
