@@ -367,7 +367,22 @@ document.addEventListener('DOMContentLoaded', async function () {
     if ($table.length) {
         tableOptions.onClickRow = async function (row, $event, field) {
             console.log(row);
-            if (row.id) {
+            await editEntry(row);
+        };
+        $table.bootstrapTable(tableOptions);
+        if (isMobile()) {
+            $table.bootstrapTable('toggleCustomView', true);
+        }
+    }
+    $('#month-filter, #year-filter').on('change', function () {
+        $table.bootstrapTable('refresh', {
+            pageNumber: 1
+        });
+    });
+});
+
+async function editEntry(row){
+if (row.id) {
                 let debit = parseFloat(row.debit) || 0;
                 let credit = parseFloat(row.credit) || 0;
 
@@ -393,18 +408,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                 document.getElementById("journal_entry_concept").value = row.description;
                 bsModal.show();
             }
-        };
-        $table.bootstrapTable(tableOptions);
-        if (isMobile()) {
-            $table.bootstrapTable('toggleCustomView', true);
-        }
-    }
-    $('#month-filter, #year-filter').on('change', function () {
-        $table.bootstrapTable('refresh', {
-            pageNumber: 1
-        });
-    });
-});
+}
 
 // FILTER
 let selectedDebitAccounts = [];
@@ -493,42 +497,60 @@ document.getElementById('filters-apply').onclick = () => {
         document.getElementById('offcanvasFilter')
     ).hide();
 };
-
 window.customViewFormatter = data => {
     const template = $('#tableTemplate').html()
     let view = ''
 
     $.each(data, function (i, row) {
-        // Resolve account (debit or credit)
-        const accountName = row.debit_account_name ?? row.credit_account_name ?? '—'
-        const accountCode = row.debit_account_code ?? row.credit_account_code ?? '—'
+        const debit  = parseFloat(row.debit)  || 0
+        const credit = parseFloat(row.credit) || 0
+        const hasDebit  = debit  > 0
+        const hasCredit = credit > 0
 
-        // Determine amount + color
-        let amount = '0.00'
-        let amountClass = 'text-muted'
+        // Icon + badge styling based on entry type
+        const icon     = getEntryIcon(row.entry_type)
+        const iconBg   = hasDebit ? 'bg-danger bg-opacity-10'  : 'bg-primary bg-opacity-10'
+        const badgeCls = hasDebit ? 'text-bg-danger'           : 'text-bg-success'
+        const amountLabel = hasDebit ? 'Cargo' : 'Abono'
 
-        if (parseFloat(row.debit) > 0) {
-            amount = parseFloat(row.debit).toFixed(2)
-            amountClass = 'text-success'
-        } else if (parseFloat(row.credit) > 0) {
-            amount = parseFloat(row.credit).toFixed(2)
-            amountClass = 'text-danger'
-        }
-
-        let icon = getEntryIcon(row.entry_type);
+        // Amount columns
+        const debitStr  = hasDebit  ? `${formatCurrency(debit)}`  : '—'
+        const creditStr = hasCredit ? `${formatCurrency(credit)}` : '—'
+        const debitCls  = hasDebit  ? 'text-danger'  : 'text-secondary'
+        const creditCls = hasCredit ? 'text-primary'  : 'text-secondary'
 
         view += template
-            .replace('%icon%', icon)
-            .replace('%title%', row.description)
-            .replace('%subtitle%', `${accountName} (${accountCode})`)
-            .replace('%amount%', amount)
-            .replace('%amount_class%', amountClass)
-
+            .replace('%entry_id%', row.id)
+            .replace('%icon_bg%',             iconBg)
+            .replace('%icon%',                icon)
+            .replace('%entry_type_label%',    row.entry_type_label ?? '—')
+            .replace('%entry_date%',          row.entry_date        ?? '—')
+            .replace('%badge_class%',         badgeCls)
+            .replace('%amount_label%',        amountLabel)
+            .replace('%debit_account_name%',  row.debit_account_name  ?? '—')
+            .replace('%debit_account_code%',  row.debit_account_code  ?? '—')
+            .replace('%credit_account_name%', row.credit_account_name ?? '—')
+            .replace('%credit_account_code%', row.credit_account_code ?? '—')
+            .replace('%description%',         row.description         ?? '—')
+            .replace('%debit_class%',         debitCls)
+            .replace('%debit%',               debitStr)
+            .replace('%credit_class%',        creditCls)
+            .replace('%credit%',              creditStr)
     })
 
     return `<div class="row g-4">${view}</div>`
 }
 
+async function editEntryMobile(id){
+    console.log(id);
+    $('#journal-table').bootstrapTable('getData').forEach(row => {
+        if (row.id === id) {
+            editEntry(row);
+        }
+    });
+
+}
+window.editEntryMobile = editEntryMobile;
 
 async function removeMultipleJournals() {
     const selected = $('#journal-table').bootstrapTable('getSelections');

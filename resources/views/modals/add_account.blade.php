@@ -16,7 +16,7 @@
                 <div class="row g-4">
 
                     <div class="col-12">
-                        <label for="parent_id" class="form-label">Cuenta Padre
+                        <label for="parent_id" class="form-label">Categorías
                             <span class="badge text-bg-primary" id="badge_root"></span>
                         </label>
                         <select id="parent_id" name="parent_id" class="form-select card-dark border border-dark" required>
@@ -39,14 +39,20 @@
                         <label>Name</label>
                         <input type="text" name="name" id="account_name" class="form-control card-dark text-dark border border-dark" required>
                     </div>
+                    <div class="col-auto text-end ms-auto">
+                        <a class="btn btn-outline-primary" data-bs-dismiss="modal">Cancelar</a>
+                    </div>
+                    <div class="col-auto text-end">
+                        <button type="submit" class="btn btn-outline-primary">Agregar cuenta</button>
+                    </div>
                 </div>
 
             </div>
 
-            <div class="modal-footer card-dark border-0">
+            <!-- <div class="modal-footer card-dark border-0">
                 <a class="btn btn-outline-primary" data-bs-dismiss="modal">Cancelar</a>
                 <button type="submit" class="btn btn-outline-primary">Agregar cuenta</button>
-            </div>
+            </div> -->
         </form>
     </div>
 </div>

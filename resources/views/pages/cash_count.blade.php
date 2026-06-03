@@ -72,7 +72,7 @@
                             <tr>
                                 <th colspan="2" class="text-end"><button data-bs-toggle="modal" data-bs-target="#auxModal" class="btn btn-primary btn-sm"><i class="fas fa-gear"></i></button> S. en Aux</th>
                                 <th>
-                                    <input type="text" id="aux" class="form-control text-end card-dark text-dark border border-dark" value="0">
+                                    <input type="number" id="aux" class="form-control text-end card-dark text-dark border border-dark" value="0">
                                 </th>
                             </tr>
                             <tr>

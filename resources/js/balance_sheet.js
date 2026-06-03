@@ -195,12 +195,13 @@ function customViewFormatter(data) {
     let html = '<div class="list-group card-dark">';
 
     data.forEach(row => {
+        console.log(row);
         let card = template
             .replace('%title%', row.account_name)
             .replace('%code%', row.account_code)
-            .replace('%amount%', row.amount > 0 ? formatCurrency(row.amount) : "0.00")
-            .replace('%percent%', row.percent > 0 ? formatMoney(row.percent) : "0.00")
-            .replace('%percent_group%', row.percent_group > 0 ? formatMoney(row.percent_group) : "0.00");
+            .replace('%amount%', row.amount)
+            .replace('%percent%', row.percent)
+            .replace('%percent_group%', row.percent_group)
 
         html += card;
     });

@@ -173,40 +173,43 @@ document.getElementById('filters-apply').onclick = () => {
     ).hide();
 };
 
-
 window.customViewFormatter = data => {
-        const template = $('#tableTemplate').html()
-        let view = ''
+    const template = $('#tableTemplate').html()
+    let view = ''
 
-        $.each(data, function (i, row) {
- // Resolve account (debit or credit)
-        const accountName = row.debit_account_name ?? row.credit_account_name ?? '—'
-        const accountCode = row.debit_account_code ?? row.credit_account_code ?? '—'
+    $.each(data, function (i, row) {
+        const debit  = parseFloat(row.debit)  || 0
+        const credit = parseFloat(row.credit) || 0
+        const hasDebit  = debit  > 0
+        const hasCredit = credit > 0
 
-        // Determine amount + color
-        let amount = '0.00'
-        let amountClass = 'text-muted'
+        const icon        = getEntryIcon(row.entry_type)
+        const iconBg      = hasDebit ? 'bg-danger bg-opacity-10' : 'bg-primary bg-opacity-10'
+        const badgeCls    = hasDebit ? 'text-bg-danger'          : 'text-bg-success'
+        const amountLabel = hasDebit ? 'Cargo'                   : 'Abono'
 
-        if (parseFloat(row.debit) > 0) {
-            amount = parseFloat(row.debit).toFixed(2)
-            amountClass = 'text-success'
-        } else if (parseFloat(row.credit) > 0) {
-            amount = parseFloat(row.credit).toFixed(2)
-            amountClass = 'text-danger'
-        }
-
-        let icon = getEntryIcon(row.entry_type);
+        const debitStr  = hasDebit  ? formatCurrency(row.debit)  : '—'
+        const creditStr = hasCredit ? formatCurrency(row.credit) : '—'
+        const debitCls  = hasDebit  ? 'text-danger'  : 'text-secondary'
+        const creditCls = hasCredit ? 'text-primary'  : 'text-secondary'
 
         view += template
-            .replace('%icon%', icon)
-            .replace('%title%', row.description)
-            .replace('%debit%', row.debit)
-            .replace('%credit%', row.credit)
-            .replace('%subtitle%', `${accountName} (${accountCode})`)
-            .replace('%amount%', amount)
-            .replace('%amount_class%', amountClass)
+            .replace('%icon_bg%',             iconBg)
+            .replace('%icon%',                icon)
+            .replace('%entry_type_label%',    row.entry_type_label  ?? '—')
+            .replace('%entry_date%',          row.entry_date        ?? '—')
+            .replace('%badge_class%',         badgeCls)
+            .replace('%amount_label%',        amountLabel)
+            .replace('%debit_account_name%',  row.debit_account_name  ?? '—')
+            .replace('%debit_account_code%',  row.debit_account_code  ?? '—')
+            .replace('%credit_account_name%', row.credit_account_name ?? '—')
+            .replace('%credit_account_code%', row.credit_account_code ?? '—')
+            .replace('%description%',         row.description         ?? '—')
+            .replace('%debit_class%',         debitCls)
+            .replace('%debit%',               debitStr)
+            .replace('%credit_class%',        creditCls)
+            .replace('%credit%',              creditStr)
+    })
 
-        })
-
-        return `<div class="row g-4">${view}</div>`
-    }
+    return `<div class="row g-4">${view}</div>`
+}

@@ -382,6 +382,31 @@ function formatCurrency(value) {
     }
 }
 
+
+function parseFirebaseError(error) {
+    console.log(error);
+    console.log({
+    code: error.code,
+    message: error.message,
+    name: error.name,
+});
+    if (!error.code) return 'Ocurrió un error inesperado';
+
+    switch (error.code) {
+        case 'auth/email-already-in-use':
+            return 'Este correo ya está registrado';
+        case 'auth/invalid-credential':
+            return 'El usuario o la contraseña es incorrecta';
+        case 'auth/weak-password':
+            return 'La contraseña debe tener al menos 6 caracteres';
+        case 'auth/invalid-email':
+            return 'Correo electrónico no válido';
+        default:
+            return 'No se pudo crear la cuenta';
+    }
+}
+window.parseFirebaseError = parseFirebaseError;
+
 function formatDate(dateString) {
     let [part1, part2, year] = dateString.split('/');
     // change order depending on your format

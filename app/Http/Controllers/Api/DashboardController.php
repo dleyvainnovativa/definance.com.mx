@@ -61,6 +61,7 @@ class DashboardController extends Controller
         }
         foreach ($debit_accounts as $account) {
             $account = get_object_vars($account);
+            if ($account["total"] == 0) continue;
             foreach ($debitAccountGroups as $prefix => $name) {
                 if (str_starts_with($account['account_code'], $prefix)) {
                     $all_debit_accounts[$prefix]['accounts'][] = $account;
@@ -80,6 +81,7 @@ class DashboardController extends Controller
         }
         foreach ($credit_accounts as $account) {
             $account = get_object_vars($account);
+            if ($account["total"] == 0) continue;
             foreach ($creditAccountGroups as $prefix => $name) {
                 if (str_starts_with($account['account_code'], $prefix)) {
                     $all_credit_accounts[$prefix]['accounts'][] = $account;
@@ -98,6 +100,8 @@ class DashboardController extends Controller
         $incomeM = array_slice($incomeM, 0, 3);
         $incomeY = IncomeStatementController::getIncomeStatement($userId, 12, $year, true)["data"];
         $incomeY = array_slice($incomeY, 0, 3);
+
+        // dd($all_debit_accounts, $all_credit_accounts);
 
         return response()->json(
             [

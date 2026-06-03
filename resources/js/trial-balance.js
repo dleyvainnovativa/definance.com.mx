@@ -225,10 +225,10 @@ window.customViewFormatter = data => {
 .replace('%account_code%', row.account_code)
 .replace('%entry_type_label%', row.entry_type_label)
 .replace('%nature%', row.nature)
-.replace('%opening%', row.opening.toFixed(2))
-.replace('%debit%', row.debit.toFixed(2))
-.replace('%credit%', row.credit.toFixed(2))
-.replace('%total%', row.total.toFixed(2))
+.replace('%opening%', formatCurrency(row.opening))
+.replace('%debit%', formatCurrency(row.debit))
+.replace('%credit%', formatCurrency(row.credit))
+.replace('%total%', formatCurrency(row.total))
 .replace('%total_class%', row.total >= 0 ? 'text-success' : 'text-danger')
 
 

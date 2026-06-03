@@ -93,7 +93,7 @@ function initAuxModal(data) {
     const defaultAccount = data.find(item => item.account_code.startsWith('100.1.'));
 
     if (defaultAccount) {
-
+        console.log("Default account found:", defaultAccount);
         // Select in Choices
         auxChoices.setChoiceByValue(defaultAccount.account_id.toString());
 
@@ -161,8 +161,9 @@ document.getElementById('confirm-aux').addEventListener('click', () => {
     const selectedId = document.getElementById('aux-select').value;
     const selected = auxData.find(item => item.account_id == selectedId);
     if (!selected) return;
+    console.log("Selected account:", selected);
     const auxInput = document.getElementById('aux');
-    auxInput.value = parseFloat(selected.total).toLocaleString();
+    auxInput.value = parseFloat(selected.total);
     calculate();
     const modal = bootstrap.Modal.getInstance(document.getElementById('auxModal'));
     modal.hide();

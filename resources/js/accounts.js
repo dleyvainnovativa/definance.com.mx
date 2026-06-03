@@ -183,9 +183,10 @@ async function buildSelect(accounts) {
 
     // set new choices
     window.accountChoices.setChoices(
-        accounts.data.map(m => ({
+    accounts.data
+        .filter(m => m.allows_children)
+        .map(m => ({
             value: m.id,
-            disabled: !m.allows_children,
             label: `${m.code} - ${m.name}`,
             selected: false,
             customProperties: {
@@ -195,10 +196,10 @@ async function buildSelect(accounts) {
                 root: m.name
             }
         })),
-        'value',
-        'label',
-        false
-    );
+    'value',
+    'label',
+    false
+);
 
     console.log("Choices built:", accounts);
 }
@@ -365,8 +366,8 @@ window.customViewFormatter = data => {
         let edit = ``;
         let remove = ``;
 
-        edit = `onclick='editAccount(${value}, ${JSON.stringify(row.name)})'`;
-        remove = `onclick='removeAccount(${value}, ${JSON.stringify(row.name)})'`;
+        edit = `onclick='editAccount(${row.id}, ${JSON.stringify(row.name)})'`;
+        remove = `onclick='removeAccount(${row.id}, ${JSON.stringify(row.name)})'`;
         view += template
             .replace('%id%', row.id)
             .replace('%icon%', getEntryIcon(row.type))

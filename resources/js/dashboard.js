@@ -138,6 +138,10 @@ function buildTable(data, id) {
         ...tableOptions,
         data: data
     });
+
+    if (isMobile()) {
+            table.bootstrapTable('toggleCustomView', true);
+        }
 }
 
 document.getElementById("refresh").addEventListener("click", initRequest);
@@ -154,4 +158,48 @@ function toggleSensitiveData() {
     // elements.forEach(element => {
     //     element.classList.toggle("blur-sensitive");
     // });
+}
+
+
+window.customViewFormatter = data => {
+    const template = $('#tableTemplate').html()
+    let view = ''
+
+    $.each(data, function (i, row) {
+        const debit  = parseFloat(row.debit)  || 0
+        const credit = parseFloat(row.credit) || 0
+        const hasDebit  = debit  > 0
+        const hasCredit = credit > 0
+
+        // Icon + badge styling based on entry type
+        const icon     = getEntryIcon(row.entry_type)
+        const iconBg   = hasDebit ? 'bg-danger bg-opacity-10'  : 'bg-primary bg-opacity-10'
+        const badgeCls = hasDebit ? 'text-bg-danger'           : 'text-bg-success'
+        const amountLabel = hasDebit ? 'Cargo' : 'Abono'
+
+        // Amount columns
+        const debitStr  = hasDebit  ? `${formatCurrency(debit)}`  : '—'
+        const creditStr = hasCredit ? `${formatCurrency(credit)}` : '—'
+        const debitCls  = hasDebit  ? 'text-danger'  : 'text-secondary'
+        const creditCls = hasCredit ? 'text-primary'  : 'text-secondary'
+
+        view += template
+            .replace('%icon_bg%',             iconBg)
+            .replace('%icon%',                icon)
+            .replace('%entry_type_label%',    row.entry_type_label ?? '—')
+            .replace('%entry_date%',          row.entry_date        ?? '—')
+            .replace('%badge_class%',         badgeCls)
+            .replace('%amount_label%',        amountLabel)
+            .replace('%debit_account_name%',  row.debit_account_name  ?? '—')
+            .replace('%debit_account_code%',  row.debit_account_code  ?? '—')
+            .replace('%credit_account_name%', row.credit_account_name ?? '—')
+            .replace('%credit_account_code%', row.credit_account_code ?? '—')
+            .replace('%description%',         row.description         ?? '—')
+            .replace('%debit_class%',         debitCls)
+            .replace('%debit%',               debitStr)
+            .replace('%credit_class%',        creditCls)
+            .replace('%credit%',              creditStr)
+    })
+
+    return `<div class="row g-4">${view}</div>`
 }

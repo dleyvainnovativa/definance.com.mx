@@ -79,33 +79,64 @@
     </div>
 </div>
 
-<template id="tableTemplate" class="">
-    <div class="col-12 col-md-12 col-lg-6 col-xl-4">
-        <div class="text-bg-white border border-dark card card-dark h-100 position-relative">
-            <div class="card-body p-4">
-                <div class="d-flex align-items-center justify-content-between">
 
-                    <!-- Leading icon -->
-                    <div class="me-3 text-primary fs-4">
+<template id="tableTemplate">
+    <div class="col-12 col-md-6 col-xl-4">
+        <div class="card h-100 border border-dark card-dark" style="cursor: pointer;">
+
+            <!-- Header row: icon + type/date + badge -->
+            <div class="card-header d-flex align-items-center justify-content-between py-4 px-3 border-bottom border-dark"
+                style="background: transparent;">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="d-flex align-items-center justify-content-center rounded-2 p-2 %icon_bg%">
                         %icon%
                     </div>
-
-                    <!-- Title + subtitle -->
-                    <div class="flex-grow-1">
-                        <div class="fw-semibold text-dark">%title%</div>
-                        <div class="text-muted small">%subtitle%</div>
+                    <div>
+                        <div class="fw-semibold small text-dark">%entry_type_label%</div>
+                        <div class="text-muted" style="font-size: 0.7rem;">%entry_date%</div>
                     </div>
+                </div>
+                <span class="badge %badge_class% fw-normal" style="font-size: 0.7rem;">%amount_label%</span>
+            </div>
 
-                    <!-- Trailing amount -->
-                    <div class="ms-3 fw-semibold">
-                        <div class="col-12 text-success">
-                            %debit%
+            <div class="card-body p-4 d-flex flex-column gap-2">
+
+                <!-- Accounts side by side -->
+                <div class="row g-2">
+                    <div class="col-6">
+                        <div class="p-2 rounded-2 h-100 card-dark">
+                            <div class="text-uppercase text-muted mb-1" style="font-size: 0.65rem; letter-spacing: 0.04em;">Cta Cargo</div>
+                            <div class="fw-semibold small text-truncate text-dark">%debit_account_name%</div>
+                            <div class="text-muted" style="font-size: 0.7rem;">%debit_account_code%</div>
                         </div>
-                        <div class="col-12 text-danger">
-                            %credit%
+                    </div>
+                    <div class="col-6">
+                        <div class="p-2 rounded-2 h-100 card-dark">
+                            <div class="text-uppercase text-muted mb-1" style="font-size: 0.65rem; letter-spacing: 0.04em;">Cta Abono</div>
+                            <div class="fw-semibold small text-truncate text-dark">%credit_account_name%</div>
+                            <div class="text-muted" style="font-size: 0.7rem;">%credit_account_code%</div>
                         </div>
                     </div>
                 </div>
+
+                <!-- Concept -->
+                <div class="text-muted small border-start border-2 ps-2 lh-sm border-dark">
+                    %description%
+                </div>
+
+                <!-- Amounts -->
+                <div class="d-flex justify-content-between align-items-center pt-2 mt-auto border-top border-dark">
+                    <div class="text-center flex-fill">
+                        <div class="text-muted" style="font-size: 0.7rem;">Cargo</div>
+                        <div class="fw-semibold %debit_class%">%debit%</div>
+                    </div>
+                    <div class="border-dark" style="width: 1px; height: 2rem;"></div>
+                    <div class="text-center flex-fill">
+                        <div class="text-muted" style="font-size: 0.7rem;">Abono</div>
+                        <div class="fw-semibold %credit_class%">%credit%</div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>

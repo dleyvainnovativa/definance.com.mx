@@ -133,12 +133,12 @@
                     </div>
 
                     <div class="d-flex justify-content-between py-1">
-                        <span class="text-muted">Débitos</span>
+                        <span class="text-muted text-uppercase">Cargos</span>
                         <span class="text-success fw-bold">%debit%</span>
                     </div>
 
                     <div class="d-flex justify-content-between py-1">
-                        <span class="text-muted">Créditos</span>
+                        <span class="text-muted text-uppercase">Abonos</span>
                         <span class="text-danger fw-bold">%credit%</span>
                     </div>
 

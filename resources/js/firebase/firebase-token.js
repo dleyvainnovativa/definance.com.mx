@@ -5,7 +5,7 @@ export async function sendTokenToBackend(user) {
 
     await fetch(`${app_url}auth/firebase`, {
         method: "POST",
-        credentials: "same-origin", // 👈🔥 CLAVE
+        credentials: "same-origin",
         headers: {
             "Content-Type": "application/json",
             "X-CSRF-TOKEN": csrf,
